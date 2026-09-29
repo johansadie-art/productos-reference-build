@@ -125,10 +125,10 @@ export async function submitIdeateAnswer(id: string, answer: string): Promise<Pr
   saveProject(project);
 
   const qa = collectQaPairs(project.ideateConversation);
-  const { content, assumptions, openQuestions } = await synthesizeConceptBrief(project.idea, qa);
+  const { conceptBrief, assumptions, openQuestions } = await synthesizeConceptBrief(project.idea, qa);
 
-  project.stages.Ideate = { status: "done", content };
-  project.sharedContext["ideate.output"] = content;
+  project.stages.Ideate = { status: "done", content: conceptBrief };
+  project.sharedContext["ideate.output"] = conceptBrief;
   if (assumptions.length) project.sharedContext["ideate.assumptions"] = assumptions.map((a) => `- ${a}`).join("\n");
   if (openQuestions.length)
     project.sharedContext["ideate.openQuestions"] = openQuestions.map((q) => `- ${q}`).join("\n");
@@ -142,7 +142,7 @@ export async function submitIdeateAnswer(id: string, answer: string): Promise<Pr
   log(project, "Ideate", "Concept locked — wrote ideation brief to shared context.");
   saveProject(project);
 
-  runRestOfPipeline(project, content).catch((err) => {
+  runRestOfPipeline(project, conceptBrief).catch((err) => {
     console.error("[orchestrator] pipeline failed:", err);
     project.status = "error";
     log(project, "System", `Pipeline failed: ${String(err)}`);

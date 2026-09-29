@@ -7,6 +7,70 @@ function wordCount(text: string): number {
   return text.trim().length ? text.trim().split(/\s+/).length : 0;
 }
 
+function bulletsFrom(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split("\n")
+    .map((l) => l.replace(/^[-*]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+/**
+ * Ideate produces three distinct artifacts, not one doc with sections
+ * bolted on (see docs/AGENTS.md / the source product's own framing):
+ * a concept brief, an assumptions log, and an open-questions list (the
+ * research agenda handed to Discover). Rendered as three stacked cards.
+ */
+function IdeateArtifacts({ project }: { project: ProjectContext }) {
+  const content = project.stages.Ideate.content;
+  const assumptions = bulletsFrom(project.sharedContext["ideate.assumptions"]);
+  const openQuestions = bulletsFrom(project.sharedContext["ideate.openQuestions"]);
+
+  if (!content) {
+    return (
+      <p className="text-sm text-white/30">
+        Answer the Ideation Agent&apos;s questions on the left to generate the concept brief, assumptions log, and
+        research agenda.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/30">Concept brief</p>
+        <MarkdownDoc content={content} />
+      </div>
+
+      {assumptions.length > 0 && (
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-amber-400/70">
+            Assumptions log — testable, not guessed at
+          </p>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-white/70">
+            {assumptions.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {openQuestions.length > 0 && (
+        <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 p-4">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-sky-400/70">
+            Open-questions list — the research agenda for Discover
+          </p>
+          <ul className="list-disc space-y-1.5 pl-5 text-sm text-white/70">
+            {openQuestions.map((q, i) => (
+              <li key={i}>{q}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Right panel: the live artifact/document for the active stage — mirrors
  * the "Ideation brief — Live concept doc" panel in the reference
@@ -34,14 +98,12 @@ export function ArtifactPanel({ project, active }: { project: ProjectContext; ac
       </div>
 
       <div className="flex-1 overflow-auto px-6 py-5">
-        {content ? (
+        {active === "Ideate" ? (
+          <IdeateArtifacts project={project} />
+        ) : content ? (
           <MarkdownDoc content={content} />
         ) : (
-          <p className="text-sm text-white/30">
-            {stage.status === "waiting"
-              ? "Answer the Ideation Agent's questions on the left to generate this doc."
-              : "Waiting for this stage to run…"}
-          </p>
+          <p className="text-sm text-white/30">Waiting for this stage to run…</p>
         )}
       </div>
 
