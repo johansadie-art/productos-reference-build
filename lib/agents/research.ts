@@ -49,14 +49,16 @@ function mockResearch(idea: string): string {
   return lines.join("\n");
 }
 
-export async function runResearchAgent(idea: string): Promise<string> {
+export async function runResearchAgent(idea: string, ideateBrief?: string): Promise<string> {
   return generateText({
     system:
       "You are the Research agent in a product-development pipeline called ProductOS. " +
-      "Given a raw product idea, produce a concise market scan: 4 named (plausible, illustrative) competitors " +
-      "with a one-line positioning each, a short TAM/SAM sizing paragraph (clearly marked illustrative if no real " +
-      "data source is available), and one notable market gap/opportunity. Output clean markdown with headings.",
-    prompt: `Product idea: "${idea}"\n\nProduce the market scan now.`,
+      "Given a raw product idea and the locked ideation brief from shared context (product name, target user), " +
+      "produce a concise market scan: 4 named (plausible, illustrative) competitors with a one-line positioning " +
+      "each, a short TAM/SAM sizing paragraph (clearly marked illustrative if no real data source is available), " +
+      "and one notable market gap/opportunity. Build on the ideation brief's target user — don't contradict it. " +
+      "Output clean markdown with headings.",
+    prompt: `Product idea: "${idea}"\n\nShared context — Ideation brief:\n${ideateBrief ?? "(none)"}\n\nProduce the market scan now.`,
     mockFallback: () => mockResearch(idea),
   });
 }

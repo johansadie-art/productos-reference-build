@@ -1,4 +1,4 @@
-export type StageName = "Research" | "PRD" | "Design" | "Code" | "Deploy";
+export type StageName = "Ideate" | "Research" | "PRD" | "Design" | "Code" | "Deploy";
 
 export type StageStatus = "pending" | "running" | "done" | "stubbed" | "error";
 

@@ -1,9 +1,8 @@
-import { ProjectContext, StageName } from "@/lib/types";
+import { ProjectContext } from "@/lib/types";
 import { NAV_STAGES, NavStageId, STAGE_UI } from "@/lib/stageUi";
 
 function isDoneOrRunning(project: ProjectContext, id: NavStageId): boolean {
-  if (id === "Ideate") return true; // idea was captured to get into the workspace at all
-  const s = project.stages[id as StageName];
+  const s = project.stages[id];
   return s.status === "done" || s.status === "stubbed" || s.status === "running";
 }
 

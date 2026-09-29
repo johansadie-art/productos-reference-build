@@ -5,10 +5,9 @@ import { ProjectContext, ProjectType } from "@/lib/types";
 import { NavStageId } from "@/lib/stageUi";
 import { HomeScreen } from "@/components/HomeScreen";
 import { TopBar } from "@/components/TopBar";
-import { WorkspaceSidebar } from "@/components/WorkspaceSidebar";
-import { StageContent } from "@/components/StageContent";
+import { ChatPanel } from "@/components/ChatPanel";
+import { ArtifactPanel } from "@/components/ArtifactPanel";
 import { ContextInspector } from "@/components/ContextInspector";
-import { ActivityFeed } from "@/components/ActivityFeed";
 
 export default function Home() {
   const [project, setProject] = useState<ProjectContext | null>(null);
@@ -62,25 +61,13 @@ export default function Home() {
     <div className="flex h-screen flex-col">
       <TopBar project={project} active={active} onSelect={setActive} onBackHome={handleBackHome} />
       <div className="flex flex-1 overflow-hidden">
-        <WorkspaceSidebar project={project} active={active} onSelect={setActive} />
-        <main className="flex-1 overflow-auto p-6">
-          <div className="mx-auto max-w-3xl space-y-6">
-            <section className="rounded-xl border border-border bg-panel p-5">
-              <StageContent project={project} active={active} />
-            </section>
-
-            <details className="rounded-xl border border-border bg-panel p-5">
-              <summary className="cursor-pointer text-sm font-semibold text-white/80">
-                Activity (shared context in motion)
-              </summary>
-              <div className="mt-4">
-                <ActivityFeed activity={project.activity} />
-              </div>
-            </details>
-
+        <ChatPanel project={project} active={active} onSelect={setActive} />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <ArtifactPanel project={project} active={active} />
+          <div className="max-h-64 overflow-auto border-t border-border p-3">
             <ContextInspector project={project} />
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

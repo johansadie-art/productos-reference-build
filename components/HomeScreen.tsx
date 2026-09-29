@@ -6,10 +6,10 @@ import { NAV_STAGES, NavStageId, PROJECT_TYPE_LABEL, STAGE_UI } from "@/lib/stag
 
 const PROJECT_TYPES: ProjectType[] = ["website", "web_app", "mobile_app"];
 
-// Only Ideate/Discover are meaningful starting points in this reference
-// build (there's nothing to "start from" for Define/Design/Code without the
-// upstream artifacts existing yet) — see docs/PRD.md scope.
-const SUPPORTED_START_STAGES: NavStageId[] = ["Ideate", "Research"];
+// Every run in this reference build starts at Ideate (there's nothing to
+// "start from" for Discover/Define/Design/Code without the upstream
+// artifacts existing yet) — see docs/PRD.md scope.
+const SUPPORTED_START_STAGES: NavStageId[] = ["Ideate"];
 
 export function HomeScreen({
   onSubmit,

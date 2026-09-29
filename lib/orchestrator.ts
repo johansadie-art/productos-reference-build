@@ -2,11 +2,12 @@ import { randomUUID } from "crypto";
 import { ProjectContext, ProjectType, StageName } from "./types";
 import { saveProject } from "./store";
 import { getMode } from "./llm";
+import { runIdeateAgent } from "./agents/ideate";
 import { runResearchAgent } from "./agents/research";
 import { runPRDAgent } from "./agents/prd";
 import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
 
-const STAGE_ORDER: StageName[] = ["Research", "PRD", "Design", "Code", "Deploy"];
+const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
 
 function emptyProject(id: string, idea: string, projectType: ProjectType, startStage?: string): ProjectContext {
   const stages = STAGE_ORDER.reduce(
@@ -16,11 +17,11 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
   const activity = [
     { time: new Date().toISOString(), stage: "System" as const, message: `Project created for idea: "${idea}"` },
   ];
-  if (startStage && startStage !== "Ideate" && startStage !== "Research") {
+  if (startStage && startStage !== "Ideate") {
     activity.push({
       time: new Date().toISOString(),
       stage: "System",
-      message: `Requested start stage "${startStage}" isn't runnable without upstream artifacts in this reference build — starting at Discover (Research) instead.`,
+      message: `Requested start stage "${startStage}" isn't runnable without upstream artifacts in this reference build — starting at Ideate instead.`,
     });
   }
   return {
@@ -48,7 +49,9 @@ function sleep(ms: number) {
  * Creates a project and kicks off the pipeline asynchronously (fire-and-forget).
  * The caller (API route) returns the project id immediately; the client polls
  * GET /api/projects/[id] to watch the shared context and activity feed update
- * live, mirroring the "night shift" timeline on the source product.
+ * live. Each stage logs 3 sub-steps (start / mid / done) so the chat-style
+ * left panel in the UI has a real (not fabricated) step-by-step trace to
+ * render, mirroring the reference product's transcript.
  */
 export function startPipeline(idea: string, projectType: ProjectType = "web_app", startStage?: string): ProjectContext {
   const id = randomUUID();
@@ -67,23 +70,44 @@ export function startPipeline(idea: string, projectType: ProjectType = "web_app"
 }
 
 async function runPipeline(project: ProjectContext) {
-  // --- Research ---
-  project.stages.Research.status = "running";
-  log(project, "Research", "Reading shared context (idea only, first stage) — starting market scan.");
+  // --- Ideate ---
+  project.stages.Ideate.status = "running";
+  log(project, "Ideate", "Reading your prompt…");
   saveProject(project);
-  await sleep(400);
+  await sleep(300);
+  log(project, "Ideate", "Sharpening the problem and target user…");
+  saveProject(project);
+  await sleep(300);
 
-  const research = await runResearchAgent(project.idea);
+  const ideateBrief = await runIdeateAgent(project.idea);
+  project.stages.Ideate = { status: "done", content: ideateBrief };
+  project.sharedContext["ideate.output"] = ideateBrief;
+  log(project, "Ideate", "Concept locked — wrote ideation brief to shared context.");
+  saveProject(project);
+
+  // --- Research (Discover) ---
+  project.stages.Research.status = "running";
+  log(project, "Research", "Reading ideation brief from shared context — scanning the market…");
+  saveProject(project);
+  await sleep(300);
+  log(project, "Research", "Profiling competitors and sizing the opportunity…");
+  saveProject(project);
+  await sleep(300);
+
+  const research = await runResearchAgent(project.idea, ideateBrief);
   project.stages.Research = { status: "done", content: research };
   project.sharedContext["research.output"] = research;
   log(project, "Research", "Market scan complete — wrote findings to shared context.");
   saveProject(project);
 
-  // --- PRD ---
+  // --- PRD (Define) ---
   project.stages.PRD.status = "running";
-  log(project, "PRD", "Reading Research output from shared context — drafting PRD.");
+  log(project, "PRD", "Reading ideation brief + research from shared context…");
   saveProject(project);
-  await sleep(400);
+  await sleep(300);
+  log(project, "PRD", "Drafting PRD sections…");
+  saveProject(project);
+  await sleep(300);
 
   const prd = await runPRDAgent(project.idea, research);
   project.stages.PRD = { status: "done", content: prd };
@@ -113,7 +137,7 @@ async function runPipeline(project: ProjectContext) {
   saveProject(project);
   await sleep(300);
   project.stages.Deploy = { status: "stubbed", content: stubDeploy() };
-  log(project, "System", "Pipeline complete. Research + PRD are live artifacts; Design/Code/Deploy are stubbed.");
+  log(project, "System", "Pipeline complete. Ideate + Research + PRD are live artifacts; Design/Code/Deploy are stubbed.");
 
   project.status = "done";
   saveProject(project);

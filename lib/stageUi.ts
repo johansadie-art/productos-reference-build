@@ -3,12 +3,11 @@ import { StageName } from "./types";
 /**
  * UI-only metadata mapping our backend stage names to the source product's
  * 5-stage IA (Ideate → Discover → Define → Design → Code), based on the
- * reference screenshots: a top-center row of colored stage icons plus a
- * left-sidebar outline. "Ideate" has no backend agent in this reference
- * build (see docs/PRD.md) — it's the idea-capture step itself, always
- * "done" once a pipeline has started.
+ * reference screenshots: a top-center row of colored stage icons, a
+ * chat-style left panel (system trace + agent intro + sub-steps), and a
+ * live-document right panel.
  */
-export type NavStageId = "Ideate" | StageName;
+export type NavStageId = StageName;
 
 export const NAV_STAGES: NavStageId[] = ["Ideate", "Research", "PRD", "Design", "Code"];
 // Deploy is intentionally excluded from the top nav to mirror the source
@@ -16,7 +15,16 @@ export const NAV_STAGES: NavStageId[] = ["Ideate", "Research", "PRD", "Design", 
 
 export const STAGE_UI: Record<
   NavStageId,
-  { label: string; sublabel: string; icon: string; color: string; ring: string }
+  {
+    label: string;
+    sublabel: string;
+    icon: string;
+    color: string;
+    ring: string;
+    agentName: string;
+    agentBlurb: string;
+    docTitle: string;
+  }
 > = {
   Ideate: {
     label: "Ideate",
@@ -24,6 +32,9 @@ export const STAGE_UI: Record<
     icon: "\u{1F4A1}",
     color: "bg-amber-500/20 text-amber-400 border-amber-500/40",
     ring: "ring-amber-400",
+    agentName: "Ideation Agent",
+    agentBlurb: "The user wants to build this product. Locking the concept before anything gets built.",
+    docTitle: "Ideation brief — Live concept doc",
   },
   Research: {
     label: "Discover",
@@ -31,6 +42,9 @@ export const STAGE_UI: Record<
     icon: "\u{1F4E1}",
     color: "bg-sky-500/20 text-sky-400 border-sky-500/40",
     ring: "ring-sky-400",
+    agentName: "Research Agent",
+    agentBlurb: "Scanning the market against the locked concept before the spec gets written.",
+    docTitle: "Research brief — Live market scan",
   },
   PRD: {
     label: "Define",
@@ -38,6 +52,9 @@ export const STAGE_UI: Record<
     icon: "\u{1F4C4}",
     color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40",
     ring: "ring-emerald-400",
+    agentName: "Definition Agent",
+    agentBlurb: "Turning the research into a real PRD everything else will be built from.",
+    docTitle: "PRD — Live spec doc",
   },
   Design: {
     label: "Design",
@@ -45,6 +62,9 @@ export const STAGE_UI: Record<
     icon: "\u{1F3A8}",
     color: "bg-violet-500/20 text-violet-400 border-violet-500/40",
     ring: "ring-violet-400",
+    agentName: "Design Agent",
+    agentBlurb: "Stubbed in this reference build — see docs/ROADMAP.md (Next phase).",
+    docTitle: "Design — Stubbed",
   },
   Code: {
     label: "Code",
@@ -52,15 +72,19 @@ export const STAGE_UI: Record<
     icon: "\u{1F4BB}",
     color: "bg-rose-500/20 text-rose-400 border-rose-500/40",
     ring: "ring-rose-400",
+    agentName: "Code Agent",
+    agentBlurb: "Stubbed in this reference build — see docs/ROADMAP.md (Next phase).",
+    docTitle: "Code — Stubbed",
   },
-  // Not in NAV_STAGES (excluded from the top switcher, see note above) but
-  // included here for type completeness and any future direct references.
   Deploy: {
     label: "Deploy",
     sublabel: "Publish and sync to your own infrastructure",
     icon: "\u{1F680}",
     color: "bg-orange-500/20 text-orange-400 border-orange-500/40",
     ring: "ring-orange-400",
+    agentName: "Deploy Agent",
+    agentBlurb: "Stubbed in this reference build — see docs/ROADMAP.md (Later phase).",
+    docTitle: "Deploy — Stubbed",
   },
 };
 
