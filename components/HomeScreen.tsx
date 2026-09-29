@@ -21,13 +21,15 @@ type SubmitFn = (
 ) => void;
 
 /**
- * The "+ New Feature" form — what used to be the entire home screen before
+ * The "new feature" form — what used to be the entire home screen before
  * this became a portfolio dashboard (see the "land on multiple features"
- * request, 2026-09-29). Same fields, plus optional Category + Feature
- * fields so user-created features can join the dashboard's grouping (and
- * cluster under an existing feature, e.g. add another PRD under "Login")
- * too. `initial` lets a cluster's "+ Add PRD" button pre-fill the
- * category/feature it was clicked from.
+ * request, 2026-09-29). Always visible at the top of the dashboard (not
+ * behind a toggle), so starting something new never requires an extra
+ * click. Same fields as before, plus optional Category + Feature fields
+ * so user-created features can join the dashboard's grouping (and cluster
+ * under an existing feature, e.g. add another PRD under "Login") too.
+ * `initial` lets a cluster's "+ Add PRD" button reset the form pre-filled
+ * with the category/feature it was clicked from.
  */
 function NewProjectForm({
   onSubmit,
@@ -57,6 +59,7 @@ function NewProjectForm({
 
   return (
     <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-border bg-panel p-4 text-left">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">New feature</p>
       <textarea
         value={idea}
         onChange={(e) => setIdea(e.target.value)}
@@ -351,9 +354,9 @@ export function HomeScreen({
   refreshKey: number;
 }) {
   const [projects, setProjects] = useState<ProjectContext[] | null>(null);
-  const [showForm, setShowForm] = useState(false);
-  // Set (and bumped via formKey) when a cluster's "+ Add PRD" button is
-  // clicked, so the form reopens pre-filled with that feature's
+  // The "+ New Feature" box is always visible on the dashboard (not
+  // toggled) — set (and bumped via formKey) when a cluster's "+ Add PRD"
+  // button is clicked, so the form resets pre-filled with that feature's
   // category/subcategory instead of blank.
   const [formSeed, setFormSeed] = useState<{ category?: string; subcategory?: string }>({});
   const [formKey, setFormKey] = useState(0);
@@ -361,7 +364,6 @@ export function HomeScreen({
   function openFormFor(seed: { category?: string; subcategory?: string }) {
     setFormSeed(seed);
     setFormKey((k) => k + 1);
-    setShowForm(true);
   }
 
   useEffect(() => {
@@ -380,33 +382,17 @@ export function HomeScreen({
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Good evening.</h1>
-          <p className="mt-1 max-w-lg text-sm text-white/50">
-            Example portfolio — a fake credit-union banking app, seeded for this demo. Every card below is its own
-            ProductOS pipeline; each is further along than the last. Click one to open it, or start a new feature.
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            if (showForm) {
-              setShowForm(false);
-            } else {
-              openFormFor({});
-            }
-          }}
-          className="shrink-0 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white transition"
-        >
-          {showForm ? "Cancel" : "+ New Feature"}
-        </button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight">Good evening.</h1>
+        <p className="mt-1 max-w-lg text-sm text-white/50">
+          Example portfolio — a fake credit-union banking app, seeded for this demo. Every card below is its own
+          ProductOS pipeline; each is further along than the last. Click one to open it, or start a new one below.
+        </p>
       </div>
 
-      {showForm && (
-        <div className="mb-10">
-          <NewProjectForm key={formKey} onSubmit={onSubmit} submitting={submitting} initial={formSeed} />
-        </div>
-      )}
+      <div className="mb-10">
+        <NewProjectForm key={formKey} onSubmit={onSubmit} submitting={submitting} initial={formSeed} />
+      </div>
 
       {projects === null ? (
         <p className="text-sm text-white/30">Loading portfolio…</p>
