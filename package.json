@@ -1,0 +1,26 @@
+{
+  "name": "productos-reference-build",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reference build: shared-context, multi-agent pipeline (Research + PRD live, Design/Code/Deploy stubbed).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^16.3.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "10.4.19",
+    "postcss": "^8.5.28",
+    "tailwindcss": "3.4.4",
+    "typescript": "5.5.3"
+  }
+}
