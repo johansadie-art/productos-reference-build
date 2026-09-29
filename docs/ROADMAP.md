@@ -27,11 +27,12 @@
   - Orchestrator + Project Context store (file/SQLite-backed, single project)
   - Research agent — mock-mode by default, pluggable to a real LLM call
   - PRD agent — mock-mode by default, pluggable to a real LLM call, reads Research output from context
-  - Design/Code/Deploy stages — visible in the pipeline UI as **stubbed stages** (clearly labeled "coming in Next"), so the full pipeline shape is visible even though only 2 stages are real
+  - Design agent — Brand Guidelines real (personality + 4-color palette + typography + voice, mock+live); Design System/User Flows/UI Screens/Design Builder + Code/Deploy stages visible in the pipeline UI as **stubbed stages** (clearly labeled), so the full pipeline shape is visible even though only some stages are real
   - Pipeline UI: idea input, live activity timeline (matches source site's "night shift" log), per-stage artifact viewer, raw Project Context inspector
 
 ## Next
 - **Theme**: Real design + code generation
+  - Design System agent: real tokens/component system, DESIGN.md, dark/light HTML previews — currently stubbed even though Brand Guidelines (the layer above it) is real
   - Design agent: generate real UX flows + a screen list, then simple wireframe rendering
   - Code agent: generate an actual runnable Next.js scaffold from PRD + Design (not just a plan)
   - Multi-project support + minimal auth (single workspace, real accounts optional)

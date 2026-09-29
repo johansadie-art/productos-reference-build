@@ -59,6 +59,7 @@ export function ChatPanel({
   const isIdeate = active === "Ideate";
   const isResearch = active === "Research";
   const isPRD = active === "PRD";
+  const isDesign = active === "Design";
   const substeps = activityFor(project, active);
   const ideateRows = isIdeate ? buildIdeateRows(project) : [];
   const canAnswer = isIdeate && stage.status === "waiting" && !answering;
@@ -184,6 +185,24 @@ export function ChatPanel({
               <p className="text-white/60">{project.prdApprovalSummary}</p>
             )}
           </div>
+        ) : isDesign ? (
+          <div className="ml-1 space-y-3">
+            {/* Design's self-directed Q&A (mirrors Research/PRD's pattern), derived
+                from the Brand Guidelines just generated — see docs/AGENTS.md. */}
+            {project.designReasoning.map((r, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex items-center gap-2 text-white/70">
+                  <span className="text-emerald-400">✓</span>
+                  <span>{r.question}</span>
+                </div>
+                <p className="ml-5 font-semibold text-white">{r.answer}</p>
+              </div>
+            ))}
+
+            {stage.status === "done" && project.designClosingSummary && (
+              <p className="text-white/60">{project.designClosingSummary}</p>
+            )}
+          </div>
         ) : (
           (() => {
             const closing = finished ? substeps[substeps.length - 1] : null;
@@ -222,7 +241,13 @@ export function ChatPanel({
             }}
             disabled={!canAnswer}
             placeholder={
-              canAnswer ? "Type your answer…" : answering ? "Waiting on the agent…" : "Tell ProductOS what you want to build…"
+              canAnswer
+                ? "Type your answer…"
+                : answering
+                  ? "Waiting on the agent…"
+                  : isFirstStage
+                    ? "Tell ProductOS what you want to build…"
+                    : `Ask ${ui.agentName} for help…`
             }
             title={canAnswer ? undefined : "Conversational input outside Ideation is a Next-phase feature — see docs/ROADMAP.md"}
             className="mb-2 w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30"

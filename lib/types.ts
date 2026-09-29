@@ -57,6 +57,28 @@ export interface PRDSection {
   content: string;
 }
 
+/** One swatch in the brand color palette — role + a psychologically-informed rationale, not just a hex code. */
+export interface BrandColor {
+  role: string; // "Primary" | "Accent" | "Background" | "Highlight"
+  name: string;
+  hex: string;
+  impact: string;
+  reason: string;
+}
+
+/**
+ * Design's real deliverable in this reference build (see docs/AGENTS.md):
+ * the Brand Guidelines doc — personality, a 4-color palette, typography,
+ * and voice. Design System/User Flows/UI Screens/Design Builder remain
+ * stubbed (they need live sandbox code execution — out of scope here).
+ */
+export interface BrandGuidelines {
+  personality: string;
+  colors: BrandColor[];
+  typography: string;
+  voice: string;
+}
+
 export interface ProjectContext {
   id: string;
   idea: string;
@@ -84,4 +106,9 @@ export interface ProjectContext {
   prdOutline: string[];
   prdSections: PRDSection[];
   prdApprovalSummary: string;
+  // Design's self-directed Q&A (mirrors Research/PRD's pattern) + the real
+  // Brand Guidelines artifact — see docs/AGENTS.md.
+  designReasoning: ReasoningPair[];
+  brandGuidelines: BrandGuidelines | null;
+  designClosingSummary: string;
 }

@@ -5,7 +5,8 @@ import { getMode } from "./llm";
 import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./agents/ideate";
 import { runResearchReasoning, runResearchTopics } from "./agents/research";
 import { runPRDReasoning, proposePRDOutline, writePRDSections, countFlaggedAssumptions } from "./agents/prd";
-import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
+import { generateBrandGuidelines, buildDesignReasoning, renderBrandGuidelinesMarkdown } from "./agents/design";
+import { stubCode, stubDeploy } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
 
@@ -42,6 +43,9 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     prdOutline: [],
     prdSections: [],
     prdApprovalSummary: "",
+    designReasoning: [],
+    brandGuidelines: null,
+    designClosingSummary: "",
   };
 }
 
@@ -232,12 +236,29 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
 }
 
 async function runFinalStubs(project: ProjectContext) {
-  // --- Design (stub) ---
+  // --- Design (Brand Guidelines real; Design System/User Flows/UI Screens/
+  // Design Builder stubbed — see docs/AGENTS.md) ---
   project.stages.Design.status = "running";
-  log(project, "Design", "Stubbed stage in this reference build (see docs/ROADMAP.md, Next phase).");
+  log(project, "Design", "Analyzing brand personality from the PRD…");
   saveProject(project);
   await sleep(300);
-  project.stages.Design = { status: "stubbed", content: stubDesign(project.idea) };
+  log(project, "Design", "Generating the color system…");
+  saveProject(project);
+  await sleep(300);
+  log(project, "Design", "Writing the strategy notes for each color…");
+  saveProject(project);
+  await sleep(300);
+
+  const prdForDesign = project.sharedContext["prd.output"] ?? "";
+  const brand = await generateBrandGuidelines(project.idea, prdForDesign);
+  project.brandGuidelines = brand;
+  project.designReasoning = buildDesignReasoning(brand);
+  project.designClosingSummary =
+    "Brand guidelines locked — palette, typography, and voice are set. Design System, User Flows, UI Screens, " +
+    "and Design Builder are stubbed in this reference build (see docs/ROADMAP.md).";
+  project.sharedContext["design.brandGuidelines"] = renderBrandGuidelinesMarkdown(brand);
+  project.stages.Design = { status: "done", content: renderBrandGuidelinesMarkdown(brand) };
+  log(project, "Design", "Brand guidelines locked — wrote brand system to shared context.");
   saveProject(project);
 
   // --- Code (stub) ---
@@ -254,7 +275,11 @@ async function runFinalStubs(project: ProjectContext) {
   saveProject(project);
   await sleep(300);
   project.stages.Deploy = { status: "stubbed", content: stubDeploy() };
-  log(project, "System", "Pipeline complete. Ideate + Research + PRD are live artifacts; Design/Code/Deploy are stubbed.");
+  log(
+    project,
+    "System",
+    "Pipeline complete. Ideate + Research + PRD + Design's Brand Guidelines are live artifacts; the rest of Design plus Code/Deploy are stubbed."
+  );
 
   project.status = "done";
   saveProject(project);
