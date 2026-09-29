@@ -4,7 +4,7 @@ import { saveProject, loadProject } from "./store";
 import { getMode } from "./llm";
 import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./agents/ideate";
 import { runResearchReasoning, runResearchTopics } from "./agents/research";
-import { runPRDAgent } from "./agents/prd";
+import { runPRDReasoning, proposePRDOutline, writePRDSections, countPRDStories } from "./agents/prd";
 import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
@@ -38,6 +38,10 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     pendingIdeateQuestions: [],
     researchReasoning: [],
     researchTopics: [],
+    prdReasoning: [],
+    prdOutline: [],
+    prdSections: [],
+    prdApprovalSummary: "",
   };
 }
 
@@ -185,20 +189,73 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   saveProject(project);
 
   // --- PRD (Define) ---
+  // Per docs/AGENTS.md: the PRD agent writes sections behind an
+  // outline-approval gate — it scaffolds the outline first and pauses
+  // (mirrors Ideate's "waiting" pattern) until the user approves it via
+  // submitPRDOutlineApproval(), instead of writing the whole doc at once.
   project.stages.PRD.status = "running";
-  log(project, "PRD", "Reading ideation brief + research from shared context…");
+  log(project, "PRD", "Turning research into requirements…");
   saveProject(project);
   await sleep(300);
-  log(project, "PRD", "Drafting PRD sections…");
+  log(project, "PRD", "Cutting scope to an MVP…");
+  saveProject(project);
+  await sleep(300);
+  log(project, "PRD", "Writing acceptance criteria…");
   saveProject(project);
   await sleep(300);
 
-  const prd = await runPRDAgent(project.idea, combined);
-  project.stages.PRD = { status: "done", content: prd };
-  project.sharedContext["prd.output"] = prd;
+  project.prdReasoning = await runPRDReasoning(project.idea, ideateBrief);
+  project.prdOutline = await proposePRDOutline(project.idea, combined);
+  project.stages.PRD.status = "waiting";
+  log(project, "PRD", "Outline proposed — waiting on your approval to start writing sections.");
+  saveProject(project);
+}
+
+/**
+ * Called once the user approves the PRD outline. Writes each section in
+ * turn against the approved outline, then continues the rest of the
+ * pipeline (Design/Code/Deploy stubs), mirroring the submitIdeateAnswer /
+ * runRestOfPipeline split used for the Ideate gate.
+ */
+export async function submitPRDOutlineApproval(id: string): Promise<ProjectContext> {
+  const project = loadProject(id);
+  if (!project) throw new Error("project not found");
+  if (project.stages.PRD.status !== "waiting") return project; // ignore stray/duplicate submits
+
+  project.stages.PRD.status = "running";
+  log(project, "PRD", "Outline approved — writing sections one at a time…");
+  saveProject(project);
+
+  writePRDAndContinue(project).catch((err) => {
+    console.error("[orchestrator] PRD section writing failed:", err);
+    project.status = "error";
+    log(project, "System", `PRD failed: ${String(err)}`);
+    saveProject(project);
+  });
+
+  return project;
+}
+
+async function writePRDAndContinue(project: ProjectContext) {
+  const ideateBrief = project.sharedContext["ideate.output"] ?? "";
+  const research = project.sharedContext["research.output"] ?? "";
+
+  const sections = await writePRDSections(project.idea, research, ideateBrief, project.prdOutline, project.prdReasoning);
+  project.prdSections = sections;
+
+  const combined = sections.map((s) => `# ${s.title}\n\n${s.content}`).join("\n\n---\n\n");
+  project.stages.PRD = { status: "done", content: combined };
+  project.sharedContext["prd.output"] = combined;
+
+  const storyCount = countPRDStories(sections);
+  project.prdApprovalSummary = `PRD approved. ${storyCount} ${storyCount === 1 ? "story" : "stories"}, each with testable acceptance criteria.`;
   log(project, "PRD", "PRD drafted — wrote spec to shared context.");
   saveProject(project);
 
+  await runFinalStubs(project);
+}
+
+async function runFinalStubs(project: ProjectContext) {
   // --- Design (stub) ---
   project.stages.Design.status = "running";
   log(project, "Design", "Stubbed stage in this reference build (see docs/ROADMAP.md, Next phase).");

@@ -42,12 +42,16 @@ export function ChatPanel({
   onSelect,
   onAnswer,
   answering,
+  onApproveOutline,
+  approvingOutline,
 }: {
   project: ProjectContext;
   active: NavStageId;
   onSelect: (id: NavStageId) => void;
   onAnswer: (answer: string) => void;
   answering: boolean;
+  onApproveOutline: () => void;
+  approvingOutline: boolean;
 }) {
   const ui = STAGE_UI[active];
   const stage = project.stages[active];
@@ -58,9 +62,11 @@ export function ChatPanel({
 
   const isIdeate = active === "Ideate";
   const isResearch = active === "Research";
+  const isPRD = active === "PRD";
   const substeps = activityFor(project, active);
   const ideateRows = isIdeate ? buildIdeateRows(project) : [];
   const canAnswer = isIdeate && stage.status === "waiting" && !answering;
+  const canApproveOutline = isPRD && stage.status === "waiting" && !approvingOutline;
 
   const [inputValue, setInputValue] = useState("");
 
@@ -92,7 +98,9 @@ export function ChatPanel({
             </div>
             <div className="flex items-center justify-between">
               <span>↳ {ui.systemStepLabel}</span>
-              <span>1 step ✓</span>
+              <span>
+                {ui.contextStepCount} {ui.contextStepCount === 1 ? "step" : "steps"} ✓
+              </span>
             </div>
           </div>
         )}
@@ -162,6 +170,37 @@ export function ChatPanel({
               📎 Upload Interviews
             </button>
           </div>
+        ) : isPRD ? (
+          <div className="ml-1 space-y-3">
+            {/* The PRD agent cuts scope before writing — self-asked, self-answered
+                from the ideation brief (see docs/AGENTS.md), then gates on outline approval. */}
+            {project.prdReasoning.map((r, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex items-center gap-2 text-white/70">
+                  <span className="text-emerald-400">✓</span>
+                  <span>{r.question}</span>
+                </div>
+                <p className="ml-5 font-semibold text-white">{r.answer}</p>
+              </div>
+            ))}
+
+            {stage.status === "waiting" && project.prdOutline.length > 0 && (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400/70">
+                  Outline proposed — approve to start writing
+                </p>
+                <ol className="list-decimal space-y-1 pl-4 text-xs text-white/60">
+                  {project.prdOutline.map((t, i) => (
+                    <li key={i}>{t}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {stage.status === "done" && project.prdApprovalSummary && (
+              <p className="text-white/60">{project.prdApprovalSummary}</p>
+            )}
+          </div>
         ) : (
           (() => {
             const closing = finished ? substeps[substeps.length - 1] : null;
@@ -183,11 +222,20 @@ export function ChatPanel({
             {idx + 1} / {NAV_STAGES.length}
           </span>
           <button
-            disabled={!next || !finished}
-            onClick={() => next && onSelect(next)}
+            disabled={canApproveOutline ? approvingOutline : !next || !finished}
+            onClick={() => {
+              if (canApproveOutline) onApproveOutline();
+              else if (next) onSelect(next);
+            }}
             className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/30"
           >
-            {next ? `Continue to ${STAGE_UI[next].label} →` : "Done"}
+            {canApproveOutline
+              ? approvingOutline
+                ? "Approving…"
+                : "Approve Outline →"
+              : next
+                ? `Continue to ${STAGE_UI[next].label} →`
+                : "Done"}
           </button>
         </div>
 
@@ -200,7 +248,13 @@ export function ChatPanel({
             }}
             disabled={!canAnswer}
             placeholder={
-              canAnswer ? "Type your answer…" : answering ? "Waiting on the agent…" : "Tell ProductOS what you want to build…"
+              canAnswer
+                ? "Type your answer…"
+                : answering
+                  ? "Waiting on the agent…"
+                  : canApproveOutline
+                    ? "Approve the outline above to start writing sections…"
+                    : "Tell ProductOS what you want to build…"
             }
             title={canAnswer ? undefined : "Conversational input outside Ideation is a Next-phase feature — see docs/ROADMAP.md"}
             className="mb-2 w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30"

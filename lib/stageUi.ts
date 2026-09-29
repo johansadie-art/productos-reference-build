@@ -26,6 +26,8 @@ export const STAGE_UI: Record<
     docTitle: string;
     /** The "get project context"-style system step line shown before the agent intro. */
     systemStepLabel: string;
+    /** How many upstream artifacts this agent reads from shared context — drives the "N steps ✓" badge. */
+    contextStepCount: number;
   }
 > = {
   Ideate: {
@@ -38,6 +40,7 @@ export const STAGE_UI: Record<
     agentBlurb: "The user wants to build this product. Locking the concept before anything gets built.",
     docTitle: "Ideation brief — Live concept doc",
     systemStepLabel: "get project context · Checking stage",
+    contextStepCount: 0,
   },
   Research: {
     label: "Discover",
@@ -49,6 +52,7 @@ export const STAGE_UI: Record<
     agentBlurb: "Validating the concept against the market before we commit to requirements.",
     docTitle: "Research brief — Live market scan",
     systemStepLabel: "plan research · load-bearing questions",
+    contextStepCount: 1,
   },
   PRD: {
     label: "Define",
@@ -56,10 +60,11 @@ export const STAGE_UI: Record<
     icon: "\u{1F4C4}",
     color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/40",
     ring: "ring-emerald-400",
-    agentName: "Definition Agent",
-    agentBlurb: "Turning the research into a real PRD everything else will be built from.",
+    agentName: "PRD Agent",
+    agentBlurb: "Turning validated research into an approved, testable first release.",
     docTitle: "PRD — Live spec doc",
-    systemStepLabel: "get project context · Checking stage",
+    systemStepLabel: "read research · Drafting requirements",
+    contextStepCount: 2,
   },
   Design: {
     label: "Design",
@@ -71,6 +76,7 @@ export const STAGE_UI: Record<
     agentBlurb: "Stubbed in this reference build — see docs/ROADMAP.md (Next phase).",
     docTitle: "Design — Stubbed",
     systemStepLabel: "get project context · Checking stage",
+    contextStepCount: 3,
   },
   Code: {
     label: "Code",
@@ -82,6 +88,7 @@ export const STAGE_UI: Record<
     agentBlurb: "Stubbed in this reference build — see docs/ROADMAP.md (Next phase).",
     docTitle: "Code — Stubbed",
     systemStepLabel: "get project context · Checking stage",
+    contextStepCount: 4,
   },
   Deploy: {
     label: "Deploy",
@@ -93,6 +100,7 @@ export const STAGE_UI: Record<
     agentBlurb: "Stubbed in this reference build — see docs/ROADMAP.md (Later phase).",
     docTitle: "Deploy — Stubbed",
     systemStepLabel: "get project context · Checking stage",
+    contextStepCount: 5,
   },
 };
 

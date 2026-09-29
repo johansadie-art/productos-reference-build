@@ -50,6 +50,13 @@ export interface ResearchTopic {
   chart?: { caption: string; bars: ChartBar[] };
 }
 
+/** A single written PRD section, once the outline has been approved. */
+export interface PRDSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface ProjectContext {
   id: string;
   idea: string;
@@ -70,4 +77,11 @@ export interface ProjectContext {
   // these are its own questions-to-itself, answered from its findings.
   researchReasoning: ReasoningPair[];
   researchTopics: ResearchTopic[];
+  // PRD/Define runs behind an outline-approval gate (see docs/AGENTS.md):
+  // propose an outline -> user approves it -> sections get written one at a
+  // time against the approved outline, not all at once from a blank prompt.
+  prdReasoning: ReasoningPair[];
+  prdOutline: string[];
+  prdSections: PRDSection[];
+  prdApprovalSummary: string;
 }

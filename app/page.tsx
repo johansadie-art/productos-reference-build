@@ -14,6 +14,7 @@ export default function Home() {
   const [active, setActive] = useState<NavStageId>("Ideate");
   const [submitting, setSubmitting] = useState(false);
   const [answering, setAnswering] = useState(false);
+  const [approvingOutline, setApprovingOutline] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,21 @@ export default function Home() {
     }
   }
 
+  async function handleApproveOutline() {
+    if (!project || approvingOutline) return;
+    setApprovingOutline(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/approve-outline`, { method: "POST" });
+      if (res.ok) {
+        const data: ProjectContext = await res.json();
+        setProject(data);
+        if (data.status === "running" && !pollRef.current) pollProject(data.id);
+      }
+    } finally {
+      setApprovingOutline(false);
+    }
+  }
+
   if (!project) {
     return <HomeScreen onSubmit={handleSubmit} submitting={submitting} />;
   }
@@ -81,7 +97,15 @@ export default function Home() {
     <div className="flex h-screen flex-col">
       <TopBar project={project} active={active} onSelect={setActive} onBackHome={handleBackHome} />
       <div className="flex flex-1 overflow-hidden">
-        <ChatPanel project={project} active={active} onSelect={setActive} onAnswer={handleAnswer} answering={answering} />
+        <ChatPanel
+          project={project}
+          active={active}
+          onSelect={setActive}
+          onAnswer={handleAnswer}
+          answering={answering}
+          onApproveOutline={handleApproveOutline}
+          approvingOutline={approvingOutline}
+        />
         <div className="flex flex-1 flex-col overflow-hidden">
           <ArtifactPanel project={project} active={active} />
           <div className="max-h-64 overflow-auto border-t border-border p-3">

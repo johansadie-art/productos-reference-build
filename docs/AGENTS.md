@@ -8,7 +8,7 @@ grows past the Now-phase scope in `docs/ROADMAP.md`. **Build status** reflects t
 |---|---|---|---|---|---|
 | 1 | **Ideation** | QUESTIONER — draws the concept out of the user, doesn't invent it | Raw idea, prior concept brief, project wiki | Concept brief (problem, target user, assumptions) + open-questions log for Research | **Real** — conversational, mock+live (see below) |
 | 2 | **Research** | INVESTIGATOR — grounds every claim in a clickable source | Ideation brief, a research task, workspace customer signals | Sourced findings, competitor registry, per-topic docs, rolling brief, survey links | **Partial** — 4 parallel per-topic docs (`write_research_run` shape) + self-directed reasoning trace, mock+live; no real multi-source fan-out (Exa/Reddit/app-store search), no surveys |
-| 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | PRD sections, executive summary, 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — one-shot single-template generation, mock+live; no outline gate, no template choice |
+| 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | PRD sections, executive summary, 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — real outline-approval gate + section-by-section writing (ProductOS Standard template only), mock+live; no PRFAQ/Lean/Enterprise templates, no revision-mode targeted edits |
 | 4 | **Architect** | Optional technical deep-dive in Define: system/DB/API/deploy/security architecture, ADRs, cost estimates | PRD sections, locked constraints, tech-stack facts | 8 architecture sections, ADRs, infra cost estimates | Not built (Later) |
 | 5 | **Design** | Turns concept+research+PRD into user flows and UI screen specs | Concept, research, PRD, locked brand direction | User-flow diagrams, UI screen specs, design docs/reports | Stubbed (Next) |
 | 6 | **Design System** | Senior visual designer; builds tokens, component system, DESIGN.md; renders HTML previews | Locked brand guidelines/assets, mood board, PRD personality notes | DESIGN.md, dark/light preview pages, token source for build agents | Not built (Later) |
@@ -44,6 +44,13 @@ Preferences, Positioning & Wedge) plus a two-question self-directed reasoning tr
 answering its own investigative questions before writing anything — distinct from the user-facing Q&A in
 Ideate), matching the `write_research_run` shape in the row above. It's still **Partial**: findings are
 illustrative/mock or single-pass live-LLM reasoning, not real multi-source search (Exa/Reddit/app-store/GitHub),
-and there's no survey generation. PRD and the rest remain one-shot generators (no `ask_agent` cross-consultation,
-no outline-approval gate, no sandboxed code execution, no headless browser, no real deploy). That gap is
-intentional — see `docs/ROADMAP.md` for phasing — not an oversight.
+and there's no survey generation.
+
+PRD/Define now runs behind a real outline-approval gate: it cuts scope with a two-question self-directed
+reasoning trace (what ships in v1 / what waits for later, mirroring Research's pattern), proposes a 9-section
+outline against the "ProductOS Standard" template, pauses (`waiting`, same mechanic as Ideate's question gate)
+until the user approves it via `submitPRDOutlineApproval()`, then writes each section in turn — see
+`lib/agents/prd.ts`. It's still **Partial**: only the Standard template exists (PRFAQ/Lean/Enterprise are
+Next-phase), there's no revision mode for targeted per-section edits, and the outline itself isn't editable
+before approval. Design and the rest remain stubbed/not built (no sandboxed code execution, no headless
+browser, no real deploy). That gap is intentional — see `docs/ROADMAP.md` for phasing — not an oversight.
