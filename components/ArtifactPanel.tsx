@@ -498,11 +498,186 @@ function isLightColor(hex: string): boolean {
 }
 
 /**
- * Design's real deliverable in this reference build is Brand Guidelines —
- * personality, a 4-color palette, typography, voice (see docs/AGENTS.md).
- * Design System/User Flows/UI Screens/Design Builder are stubbed: they need
- * live sandbox code execution, out of scope here. Mirrors the reference
- * screenshot's 5-tab bar + colored swatch-card palette grid.
+ * The Design System tab: tokens (colors extend the locked brand palette,
+ * spacing/radius are fixed scales) + a component system + a small
+ * live-rendered light/dark preview — a stand-in for the real spec's
+ * "renders HTML previews" tool that doesn't need a sandbox to be honest.
+ */
+function DesignSystemView({ project }: { project: ProjectContext }) {
+  const ds = project.designSystem;
+  const brand = project.brandGuidelines;
+  const [mode, setMode] = useState<"light" | "dark">("light");
+
+  if (!ds || !brand) {
+    return (
+      <div className="flex-1 px-6 py-5">
+        <p className="text-sm text-white/30">Waiting for this stage to run…</p>
+      </div>
+    );
+  }
+
+  const primary = brand.colors.find((c) => c.role === "Primary")?.hex ?? "#111827";
+  const accent = brand.colors.find((c) => c.role === "Accent")?.hex ?? "#f59e0b";
+  const bg = mode === "light" ? brand.colors.find((c) => c.role === "Background")?.hex ?? "#ffffff" : "#0b0b0f";
+  const fg = mode === "light" ? "#111827" : "#f5f5f5";
+
+  return (
+    <div className="flex-1 space-y-6 overflow-auto px-6 py-5">
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30">Live Preview</p>
+          <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+            <button
+              onClick={() => setMode("light")}
+              className={`rounded px-2 py-0.5 text-[10px] transition ${mode === "light" ? "bg-white/10 text-white" : "text-white/40"}`}
+            >
+              Light
+            </button>
+            <button
+              onClick={() => setMode("dark")}
+              className={`rounded px-2 py-0.5 text-[10px] transition ${mode === "dark" ? "bg-white/10 text-white" : "text-white/40"}`}
+            >
+              Dark
+            </button>
+          </div>
+        </div>
+        <div className="rounded-lg border border-border p-5" style={{ backgroundColor: bg, color: fg }}>
+          <div
+            className="rounded-lg p-3"
+            style={{
+              backgroundColor: mode === "light" ? "#ffffff" : "#18181f",
+              border: `1px solid ${mode === "light" ? "#e5e7eb" : "#27272f"}`,
+            }}
+          >
+            <p className="mb-1 text-sm font-medium">Card</p>
+            <p className="mb-3 text-xs opacity-70">Sample card rendered from the locked tokens below.</p>
+            <div className="flex gap-2">
+              <button className="rounded-md px-3 py-1.5 text-xs font-medium text-white" style={{ backgroundColor: primary }}>
+                Primary
+              </button>
+              <button className="rounded-md px-3 py-1.5 text-xs font-medium text-white" style={{ backgroundColor: accent }}>
+                Accent
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/30">Tokens</p>
+        <div className="overflow-hidden rounded-lg border border-border">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-white/5 text-white/40">
+              <tr>
+                <th className="px-3 py-2 font-medium">Category</th>
+                <th className="px-3 py-2 font-medium">Name</th>
+                <th className="px-3 py-2 font-medium">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ds.tokens.map((t, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className="px-3 py-2 text-white/50">{t.category}</td>
+                  <td className="px-3 py-2 text-white/70">{t.name}</td>
+                  <td className="px-3 py-2 font-medium text-white">{t.value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/30">Components</p>
+        <div className="grid grid-cols-2 gap-3">
+          {ds.components.map((c, i) => (
+            <div key={i} className="rounded-lg border border-border p-3">
+              <p className="mb-1 text-sm font-medium text-white/80">{c.name}</p>
+              <p className="mb-1 text-[11px] text-white/50">
+                <span className="font-medium text-white/70">Variants:</span> {c.variants.join(", ")}
+              </p>
+              <p className="mb-1 text-[11px] text-white/50">
+                <span className="font-medium text-white/70">States:</span> {c.states.join(", ")}
+              </p>
+              <p className="text-[11px] text-white/40">{c.notes}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The User Flows tab — the Design Agent's own deliverable (get_user_flows/set_user_flows), not Design System's. */
+function UserFlowsView({ project }: { project: ProjectContext }) {
+  const flows = project.userFlows;
+  if (!flows.length) {
+    return (
+      <div className="flex-1 px-6 py-5">
+        <p className="text-sm text-white/30">Waiting for this stage to run…</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex-1 space-y-4 overflow-auto px-6 py-5">
+      {flows.map((f) => (
+        <div key={f.id} className="rounded-lg border border-border p-4">
+          <p className="mb-1 text-sm font-medium text-white/80">{f.name}</p>
+          <p className="mb-3 text-xs text-white/40">{f.purpose}</p>
+          <div className="space-y-2">
+            {f.steps.map((s, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/10 text-[10px] text-white/70">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-xs font-medium text-white/80">{s.screen}</p>
+                  <p className="text-xs text-white/40">{s.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The UI Screens tab — specs for exactly the screens named across User Flows, never a mismatched set. */
+function UIScreensView({ project }: { project: ProjectContext }) {
+  const screens = project.uiScreens;
+  if (!screens.length) {
+    return (
+      <div className="flex-1 px-6 py-5">
+        <p className="text-sm text-white/30">Waiting for this stage to run…</p>
+      </div>
+    );
+  }
+  return (
+    <div className="flex-1 overflow-auto px-6 py-5">
+      <div className="grid grid-cols-2 gap-3">
+        {screens.map((s) => (
+          <div key={s.id} className="rounded-lg border border-border p-4">
+            <p className="mb-1 text-sm font-medium text-white/80">{s.name}</p>
+            <p className="mb-2 text-xs text-white/40">{s.purpose}</p>
+            <p className="mb-1 text-[11px] text-white/50">
+              <span className="font-medium text-white/70">Components:</span> {s.components.join(", ")}
+            </p>
+            <p className="text-[11px] text-white/50">
+              <span className="font-medium text-white/70">States:</span> {s.states.join(", ")}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Design's real deliverables in this reference build: Brand Guidelines,
+ * Design System (tokens/components/DESIGN.md), User Flows, and UI Screens
+ * — see docs/AGENTS.md. Only Design Builder (live sandbox page-building)
+ * remains stubbed. Mirrors the reference screenshot's 5-tab bar.
  */
 function DesignArtifactPanel({ project }: { project: ProjectContext }) {
   const stage = project.stages.Design;
@@ -517,16 +692,21 @@ function DesignArtifactPanel({ project }: { project: ProjectContext }) {
     <section className="flex h-full flex-col">
       <div className="flex items-center gap-1 border-b border-border px-5 py-2.5">
         {(["Brand Guidelines", "Design System", "User Flows", "UI Screens", "Design Builder"] as const).map((t) => {
-          const enabled = t === "Brand Guidelines";
+          const enabled =
+            t === "Brand Guidelines" ||
+            (t === "Design System" && !!project.designSystem) ||
+            (t === "User Flows" && project.userFlows.length > 0) ||
+            (t === "UI Screens" && project.uiScreens.length > 0);
+          const title = enabled
+            ? undefined
+            : t === "Design Builder"
+              ? "Not built in this reference build — needs live sandbox code execution, see docs/ROADMAP.md"
+              : "Waiting for this stage to run…";
           return (
             <button
               key={t}
               disabled={!enabled}
-              title={
-                enabled
-                  ? undefined
-                  : "Not built in this reference build — needs live sandbox code execution, see docs/ROADMAP.md"
-              }
+              title={title}
               onClick={() => enabled && setTab(t)}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
                 tab === t && enabled ? "bg-white/10 text-white" : "text-white/30"
@@ -554,7 +734,13 @@ function DesignArtifactPanel({ project }: { project: ProjectContext }) {
         </span>
       </div>
 
-      {!brand ? (
+      {tab === "Design System" ? (
+        <DesignSystemView project={project} />
+      ) : tab === "User Flows" ? (
+        <UserFlowsView project={project} />
+      ) : tab === "UI Screens" ? (
+        <UIScreensView project={project} />
+      ) : !brand ? (
         <div className="flex-1 px-6 py-5">
           <p className="text-sm text-white/30">Waiting for this stage to run…</p>
         </div>

@@ -27,15 +27,16 @@
   - Orchestrator + Project Context store (file/SQLite-backed, single project)
   - Research agent — mock-mode by default, pluggable to a real LLM call
   - PRD agent — mock-mode by default, pluggable to a real LLM call, reads Research output from context
-  - Design agent — Brand Guidelines real (personality + 4-color palette + typography + voice, mock+live); Design System/User Flows/UI Screens/Design Builder + Code/Deploy stages visible in the pipeline UI as **stubbed stages** (clearly labeled), so the full pipeline shape is visible even though only some stages are real
+  - Design agent — Brand Guidelines, 3 User Flows, and UI Screen specs for every screen those flows name, all mock+live
+  - Design System agent — tokens (extends the locked brand palette) + a 4-component system + DESIGN.md, mock+live, with a small live light/dark token preview standing in for real HTML preview rendering
+  - Design Builder (live sandbox page-building) + Code/Deploy stages visible in the pipeline UI as **stubbed stages** (clearly labeled), so the full pipeline shape is visible even though only some stages are real
   - Locked constraints (tech-stack facts + structured project constraints) — mock+live, generated once early in the pipeline, read by both PRD and Architect via `load_constraints`
   - Architect agent — the real, genuinely **optional** deep-dive: 8 architecture sections + 3 ADRs + an infra cost estimate, mock+live, triggered on demand from the Architecture tab (not auto-run, unlike the rest of the pipeline)
   - Pipeline UI: idea input, live activity timeline (matches source site's "night shift" log), per-stage artifact viewer, raw Project Context inspector
 
 ## Next
 - **Theme**: Real design + code generation
-  - Design System agent: real tokens/component system, DESIGN.md, dark/light HTML previews — currently stubbed even though Brand Guidelines (the layer above it) is real
-  - Design agent: generate real UX flows + a screen list, then simple wireframe rendering
+  - Design Builder: the Fullstack Builder's live sandbox page-building tool — actually render/build the UI Screens as running code, not just specs
   - Code agent: generate an actual runnable Next.js scaffold from PRD + Design (not just a plan)
   - Multi-project support + minimal auth (single workspace, real accounts optional)
   - Multi-provider research fan-out (SerpAPI/Exa/Perplexity) if single-provider research proves the concept

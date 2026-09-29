@@ -134,6 +134,55 @@ export interface InfrastructureCostEstimate {
   notes: string;
 }
 
+/** One design token — colors extend the locked brand palette; spacing/radius are fixed small-scale constants. */
+export interface DesignToken {
+  category: string; // "Color" | "Spacing" | "Radius"
+  name: string;
+  value: string;
+}
+
+/** One component in the Design System's component system (`write_design_preview`/`write_design_brief`). */
+export interface ComponentSpec {
+  name: string; // "Button" | "Input" | "Card" | "Badge"
+  variants: string[];
+  states: string[];
+  notes: string;
+}
+
+/**
+ * The Design System Agent's real deliverable in this build: tokens +
+ * a component system + DESIGN.md (see docs/AGENTS.md). The "dark/light
+ * preview pages" tool is stood in for by a small live-rendered preview in
+ * this app's own UI, not a sandboxed build.
+ */
+export interface DesignSystem {
+  tokens: DesignToken[];
+  components: ComponentSpec[];
+}
+
+/** One step in a user flow — a screen name + what happens there. */
+export interface UserFlowStep {
+  screen: string;
+  description: string;
+}
+
+/** One named user flow (`get_user_flows`/`set_user_flows`) — the Design Agent's own deliverable, not Design System's. */
+export interface UserFlow {
+  id: string;
+  name: string;
+  purpose: string;
+  steps: UserFlowStep[];
+}
+
+/** One UI screen spec, for exactly the screens named across the user flows. */
+export interface UIScreen {
+  id: string;
+  name: string;
+  purpose: string;
+  components: string[];
+  states: string[];
+}
+
 export interface ProjectContext {
   id: string;
   idea: string;
@@ -166,6 +215,13 @@ export interface ProjectContext {
   designReasoning: ReasoningPair[];
   brandGuidelines: BrandGuidelines | null;
   designClosingSummary: string;
+  // Design System (tokens/component system/DESIGN.md) + the Design Agent's
+  // own User Flows and UI Screens deliverables — all real now, see
+  // lib/agents/designSystem.ts and lib/agents/flows.ts. Design Builder
+  // (live sandbox page-building) remains stubbed.
+  designSystem: DesignSystem | null;
+  userFlows: UserFlow[];
+  uiScreens: UIScreen[];
   // Locked constraints (see ProjectConstraints) — read by PRD's and the
   // Architect's shared load_constraints tool. Generated once, early.
   constraints: ProjectConstraints | null;

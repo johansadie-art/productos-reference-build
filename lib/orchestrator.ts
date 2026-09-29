@@ -6,6 +6,8 @@ import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./a
 import { runResearchReasoning, runResearchTopics } from "./agents/research";
 import { runPRDReasoning, proposePRDOutline, writePRDSections, countFlaggedAssumptions } from "./agents/prd";
 import { generateBrandGuidelines, buildDesignReasoning, renderBrandGuidelinesMarkdown } from "./agents/design";
+import { generateDesignSystem, renderDesignSystemMarkdown } from "./agents/designSystem";
+import { generateUserFlows, generateUIScreens, uniqueScreenNames, renderUserFlowsMarkdown, renderUIScreensMarkdown } from "./agents/flows";
 import { generateConstraints, renderTechStackMarkdown, renderProjectConstraintsMarkdown } from "./agents/constraints";
 import { generateArchitecture, renderArchitectureMarkdown } from "./agents/architect";
 import { stubCode, stubDeploy } from "./agents/stubs";
@@ -48,6 +50,9 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     designReasoning: [],
     brandGuidelines: null,
     designClosingSummary: "",
+    designSystem: null,
+    userFlows: [],
+    uiScreens: [],
     constraints: null,
     architectureStatus: "not_started",
     architectureSections: [],
@@ -303,8 +308,9 @@ export async function runArchitectureDeepDive(id: string): Promise<ProjectContex
 }
 
 async function runFinalStubs(project: ProjectContext) {
-  // --- Design (Brand Guidelines real; Design System/User Flows/UI Screens/
-  // Design Builder stubbed — see docs/AGENTS.md) ---
+  // --- Design (Brand Guidelines, Design System, User Flows, and UI Screens
+  // all real; only Design Builder — the live sandbox page-builder — stays
+  // stubbed. See docs/AGENTS.md.) ---
   project.stages.Design.status = "running";
   log(project, "Design", "Analyzing brand personality from the PRD…");
   saveProject(project);
@@ -320,12 +326,36 @@ async function runFinalStubs(project: ProjectContext) {
   const brand = await generateBrandGuidelines(project.idea, prdForDesign);
   project.brandGuidelines = brand;
   project.designReasoning = buildDesignReasoning(brand);
-  project.designClosingSummary =
-    "Brand guidelines locked — palette, typography, and voice are set. Design System, User Flows, UI Screens, " +
-    "and Design Builder are stubbed in this reference build (see docs/ROADMAP.md).";
   project.sharedContext["design.brandGuidelines"] = renderBrandGuidelinesMarkdown(brand);
+
+  log(project, "Design", "Building the component system…");
+  saveProject(project);
+  await sleep(300);
+  const designSystem = await generateDesignSystem(project.idea, brand);
+  project.designSystem = designSystem;
+  project.sharedContext["design.designSystem"] = renderDesignSystemMarkdown(designSystem, brand);
+
+  log(project, "Design", "Writing user flows…");
+  saveProject(project);
+  await sleep(300);
+  const flows = await generateUserFlows(project.idea, prdForDesign);
+  project.userFlows = flows;
+  project.sharedContext["design.userFlows"] = renderUserFlowsMarkdown(flows);
+
+  log(project, "Design", "Specifying UI screens…");
+  saveProject(project);
+  await sleep(300);
+  const screenNames = uniqueScreenNames(flows);
+  const componentNames = designSystem.components.map((c) => c.name);
+  const screens = await generateUIScreens(project.idea, prdForDesign, screenNames, componentNames);
+  project.uiScreens = screens;
+  project.sharedContext["design.uiScreens"] = renderUIScreensMarkdown(screens);
+
+  project.designClosingSummary =
+    `Brand guidelines, component system, ${flows.length} user flows, and ${screens.length} UI screens are locked. ` +
+    "Design Builder (live sandbox page-building) is stubbed in this reference build (see docs/ROADMAP.md).";
   project.stages.Design = { status: "done", content: renderBrandGuidelinesMarkdown(brand) };
-  log(project, "Design", "Brand guidelines locked — wrote brand system to shared context.");
+  log(project, "Design", "Design locked — wrote brand system, tokens, flows, and screens to shared context.");
   saveProject(project);
 
   // --- Code (stub) ---
@@ -345,7 +375,7 @@ async function runFinalStubs(project: ProjectContext) {
   log(
     project,
     "System",
-    "Pipeline complete. Ideate + Research + PRD + Design's Brand Guidelines are live artifacts; the rest of Design plus Code/Deploy are stubbed."
+    "Pipeline complete. Ideate + Research + PRD + Design (Brand Guidelines, Design System, User Flows, UI Screens) are live artifacts; Design Builder plus Code/Deploy are stubbed."
   );
 
   project.status = "done";
