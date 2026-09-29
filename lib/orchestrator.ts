@@ -4,7 +4,7 @@ import { saveProject, loadProject } from "./store";
 import { getMode } from "./llm";
 import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./agents/ideate";
 import { runResearchReasoning, runResearchTopics } from "./agents/research";
-import { runPRDReasoning, proposePRDOutline, writePRDSections, countPRDStories } from "./agents/prd";
+import { runPRDReasoning, proposePRDOutline, writePRDSections, countFlaggedAssumptions } from "./agents/prd";
 import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
@@ -238,17 +238,25 @@ export async function submitPRDOutlineApproval(id: string): Promise<ProjectConte
 
 async function writePRDAndContinue(project: ProjectContext) {
   const ideateBrief = project.sharedContext["ideate.output"] ?? "";
+  const ideateAssumptions = project.sharedContext["ideate.assumptions"] ?? "";
   const research = project.sharedContext["research.output"] ?? "";
 
-  const sections = await writePRDSections(project.idea, research, ideateBrief, project.prdOutline, project.prdReasoning);
+  const sections = await writePRDSections(
+    project.idea,
+    research,
+    ideateBrief,
+    ideateAssumptions,
+    project.prdOutline,
+    project.prdReasoning
+  );
   project.prdSections = sections;
 
   const combined = sections.map((s) => `# ${s.title}\n\n${s.content}`).join("\n\n---\n\n");
   project.stages.PRD = { status: "done", content: combined };
   project.sharedContext["prd.output"] = combined;
 
-  const storyCount = countPRDStories(sections);
-  project.prdApprovalSummary = `PRD approved. ${storyCount} ${storyCount === 1 ? "story" : "stories"}, each with testable acceptance criteria.`;
+  const flaggedCount = countFlaggedAssumptions(sections);
+  project.prdApprovalSummary = `PRD approved. ${flaggedCount} ${flaggedCount === 1 ? "assumption" : "assumptions"} flagged for team validation.`;
   log(project, "PRD", "PRD drafted — wrote spec to shared context.");
   saveProject(project);
 

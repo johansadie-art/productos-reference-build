@@ -7,17 +7,23 @@ import { PRDSection, ReasoningPair } from "../types";
 // established upstream. This reference build supports one template
 // ("ProductOS Standard"); PRFAQ/Lean/Enterprise are Next-phase — see
 // docs/ROADMAP.md.
+//
+// The 8-section outline below is the real ProductOS Standard structure
+// (per user-supplied reference copy, 2026-09-29): "Summary, Background,
+// Objective with SMART key results, Market Segments, Value Propositions,
+// Solution, and Release plan" + "Assumptions flagged for team validation" —
+// structured the way engineering and leadership expect, not a generic
+// user-story spec.
 
 export const PRD_STANDARD_OUTLINE = [
-  "Product Overview",
-  "Problem & Opportunity",
-  "Proposed Solution",
-  "Scope & Non-Goals",
-  "Requirements & Specifications",
-  "User Stories & Acceptance Criteria",
-  "Success Criteria",
-  "Launch Plan",
-  "Open Questions",
+  "Summary",
+  "Background",
+  "Objective & Key Results",
+  "Market Segments",
+  "Value Propositions",
+  "Solution",
+  "Release Plan",
+  "Assumptions",
 ];
 
 const SECTION_DELIM = "%%%SECTION:";
@@ -41,8 +47,29 @@ function extractBullet(md: string, headerRegex: RegExp): string | undefined {
 
 function firstNonHeadingLine(md: string): string | undefined {
   if (!md) return undefined;
-  const line = md.split("\n").find((l) => l.trim().length > 0 && !l.startsWith("#") && !l.startsWith(">"));
+  const line = md
+    .split("\n")
+    .find(
+      (l) =>
+        l.trim().length > 0 &&
+        !l.startsWith("#") &&
+        !l.startsWith(">") &&
+        !l.trim().startsWith("|") && // skip markdown table rows/headers
+        !/^-{3,}$/.test(l.trim())
+    );
   return line?.trim();
+}
+
+/**
+ * Research is stored as one combined string, `# <Topic>` blocks joined by
+ * `\n\n---\n\n` (see orchestrator.ts). Pull a single topic's block back out
+ * so PRD sections can ground specific claims in the specific research run
+ * that produced them, not just "research" generically.
+ */
+function extractResearchTopic(research: string, tabLabel: string): string | undefined {
+  if (!research) return undefined;
+  const re = new RegExp(`# ${tabLabel}\\n\\n([\\s\\S]*?)(?:\\n---\\n|$)`);
+  return research.match(re)?.[1]?.trim();
 }
 
 /** The PRD agent cuts scope before writing: what ships in v1, what waits for later. */
@@ -81,8 +108,9 @@ export async function proposePRDOutline(idea: string, research: string): Promise
   const raw = await generateText({
     system:
       "You are the PRD agent in a product-development pipeline called ProductOS. Before writing anything, you " +
-      "scaffold a document outline using the 'ProductOS Standard' template and get it approved. Output exactly " +
-      "9 section titles, one per line, no numbering, no extra text, using conventional PRD section names.",
+      "scaffold a document outline using the 'ProductOS Standard' template — a leadership-and-engineering-ready " +
+      "PRD, not a user-story spec — and get it approved. Output exactly these 8 section titles verbatim, one per " +
+      `line, no numbering, no extra text: ${PRD_STANDARD_OUTLINE.join(", ")}.`,
     prompt: `Product idea: "${idea}"\n\nResearch brief (for context):\n${research || "(none)"}\n\nPropose the outline now.`,
     mockFallback: () => PRD_STANDARD_OUTLINE.join("\n"),
   });
@@ -92,76 +120,7 @@ export async function proposePRDOutline(idea: string, research: string): Promise
     .map((l) => l.replace(/^[-*\d.\s]+/, "").trim())
     .filter(Boolean);
 
-  return lines.length >= 5 ? lines.slice(0, 9) : PRD_STANDARD_OUTLINE;
-}
-
-function buildUserStories(idea: string, shipsInV1: string): string {
-  const trimmedIdea = idea.length > 70 ? `${idea.slice(0, 70)}…` : idea;
-  const stories: { title: string; want: string; so: string; ac: string[] }[] = [
-    {
-      title: "First capture",
-      want: `quickly start using "${trimmedIdea}" without setup friction`,
-      so: "I get to the core value before I lose interest",
-      ac: ["A first-run flow completes in under 60 seconds", "No required field beyond what's needed to produce output"],
-    },
-    {
-      title: "Core output",
-      want: `see the result of ${shipsInV1}`,
-      so: "I can judge immediately whether this is worth continuing",
-      ac: ["Output is visible in the same session it was requested", "Output is editable, not a dead end"],
-    },
-    {
-      title: "Confirm before leaving",
-      want: "confirm or adjust the output before I'm done",
-      so: "I trust what got saved",
-      ac: ["A confirmation step is shown before the session ends", "Edits at confirmation are reflected in the saved result"],
-    },
-    {
-      title: "Return usage",
-      want: "pick up where I left off on a return visit",
-      so: "the product compounds instead of starting from zero",
-      ac: ["Prior output is retrievable on the next visit", "State from the prior session is not lost"],
-    },
-    {
-      title: "Trust the output",
-      want: "understand why the product produced this specific output",
-      so: "I can trust it enough to act on it",
-      ac: ["Each output traces back to an input the user provided", "No unexplained or unlabeled generated content"],
-    },
-    {
-      title: "Fail gracefully",
-      want: "get a clear message if the product can't complete the job",
-      so: "I'm not left guessing",
-      ac: ["Every failure state has a user-visible explanation", "The user is offered a next step, not a dead end"],
-    },
-  ];
-
-  const lines = [
-    `# User Stories & Acceptance Criteria`,
-    ``,
-    `> Persona-linked stories with testable acceptance criteria per story — ready to hand to Design and QA.`,
-    ``,
-  ];
-  stories.forEach((s, i) => {
-    lines.push(`### Story ${i + 1}: ${s.title}`);
-    lines.push(`**As a** target user, **I want** to ${s.want}, **so that** ${s.so}.`);
-    lines.push(``);
-    lines.push(`**Acceptance criteria:**`);
-    s.ac.forEach((a) => lines.push(`- ${a}`));
-    lines.push(``);
-  });
-  return lines.join("\n");
-}
-
-function bulletizeOpenQuestions(research: string): string {
-  if (!research) return "- No unresolved questions surfaced by Research.";
-  const candidates = research
-    .split("\n")
-    .filter((l) => /gap|assumption|risk|unresolved/i.test(l) && l.trim().length > 0 && l.trim().length < 220)
-    .map((l) => l.replace(/^[#>*\-\s]+/, "").trim())
-    .filter(Boolean);
-  const picked = Array.from(new Set(candidates)).slice(0, 2);
-  return picked.length ? picked.map((l) => `- ${l}`).join("\n") : "- No unresolved questions surfaced by Research.";
+  return lines.length === PRD_STANDARD_OUTLINE.length ? lines : PRD_STANDARD_OUTLINE;
 }
 
 function mockSectionContent(
@@ -169,26 +128,25 @@ function mockSectionContent(
   idea: string,
   ideateBrief: string,
   research: string,
+  ideateAssumptions: string,
   reasoning: ReasoningPair[]
 ): string {
   const shipsInV1 = reasoning[0]?.answer ?? "the core flow needed to prove the idea";
-  const waitsForLater = reasoning[1]?.answer ?? "anything not required to prove the core value proposition";
 
   switch (title) {
-    case "Product Overview":
+    case "Summary":
       return [
-        `# Product Overview`,
+        `# Summary`,
         ``,
-        `> One paragraph anyone in the company should be able to read and know what's being built, for whom, and why now.`,
+        `> One paragraph anyone in the company — engineering or leadership — should be able to read and know ` +
+          `what's being built, for whom, and why now.`,
         ``,
-        `**Product**: a product that delivers on: "${idea}".`,
-        ``,
-        `**Grounded in**: the locked Ideation brief and the Research brief already in shared context — this ` +
-          `section does not re-ask the user anything already established upstream.`,
+        `A product that delivers on: "${idea}". Grounded in the locked Ideation brief and the Research brief ` +
+          `already in shared context — this section does not re-ask the user anything already established upstream.`,
       ].join("\n");
-    case "Problem & Opportunity":
+    case "Background":
       return [
-        `# Problem & Opportunity`,
+        `# Background`,
         ``,
         `> Why this, why now — traced back to Ideate and Research, not invented here.`,
         ``,
@@ -198,70 +156,83 @@ function mockSectionContent(
         `## From the Research brief`,
         research ? `> ${firstNonHeadingLine(research) ?? research.slice(0, 160)}` : `_No research brief in shared context._`,
       ].join("\n");
-    case "Proposed Solution":
+    case "Objective & Key Results":
       return [
-        `# Proposed Solution`,
+        `# Objective & Key Results`,
+        ``,
+        `> One objective, SMART key results underneath it — measurable, not aspirational.`,
+        ``,
+        `## Objective`,
+        `Prove that "${idea}" is worth building past v1.`,
+        ``,
+        `## Key Results (SMART)`,
+        `| Key result | Target | Timeframe | Why it's SMART |`,
+        `| --- | --- | --- | --- |`,
+        `| First-session completion rate | ≥ 50% | First 30 days post-launch | Specific & measurable — confirms the core flow works without hand-holding |`,
+        `| Return usage within 7 days | ≥ 30% | Rolling, measured weekly | Time-bound — confirms the value repeats, not just novelty |`,
+        `| Qualitative fit signal | Positive in 7 of first 10 conversations | First 10 user conversations | Achievable & relevant — confirms the riskiest assumption from Research held up |`,
+      ].join("\n");
+    case "Market Segments": {
+      const customerPrefs = extractResearchTopic(research, "Customer Preferences");
+      const marketSizing = extractResearchTopic(research, "Market Sizing & Pricing");
+      return [
+        `# Market Segments`,
+        ``,
+        `> Who this is for, sized against the Research brief already in shared context.`,
+        ``,
+        `## Primary segment`,
+        customerPrefs ? `> ${firstNonHeadingLine(customerPrefs) ?? customerPrefs.slice(0, 160)}` : `_No customer research in shared context._`,
+        ``,
+        `## Sizing`,
+        marketSizing ? `> ${firstNonHeadingLine(marketSizing) ?? marketSizing.slice(0, 160)}` : `_No market sizing in shared context._`,
+      ].join("\n");
+    }
+    case "Value Propositions": {
+      const positioning = extractResearchTopic(research, "Positioning & Wedge");
+      return [
+        `# Value Propositions`,
+        ``,
+        `> The one-line reason this wins the segment above — traced to Research's positioning brief, not invented here.`,
+        ``,
+        positioning ? `> ${firstNonHeadingLine(positioning) ?? positioning.slice(0, 200)}` : `_No positioning brief in shared context._`,
+        ``,
+        `**Ships in v1**: ${shipsInV1}`,
+      ].join("\n");
+    }
+    case "Solution":
+      return [
+        `# Solution`,
         ``,
         `> The shape of the fix, not the whole roadmap.`,
         ``,
-        `A focused v1 that ships **${shipsInV1}**, validated against the Research brief's positioning and wedge, ` +
-          `before anything broader gets built.`,
+        `A focused v1 that delivers **${shipsInV1}**, validated against the Research brief's positioning and ` +
+          `wedge, before anything broader gets built.`,
       ].join("\n");
-    case "Scope & Non-Goals":
+    case "Release Plan":
       return [
-        `# Scope & Non-Goals`,
-        ``,
-        `> Explicit boundaries — the fastest way a PRD rots is scope that was never written down.`,
-        ``,
-        `## In scope for v1`,
-        `- ${shipsInV1}`,
-        ``,
-        `## Explicitly out of scope for v1`,
-        `- ${waitsForLater}`,
-      ].join("\n");
-    case "Requirements & Specifications":
-      return [
-        `# Requirements & Specifications`,
-        ``,
-        `> Functional requirements a build team can act on without asking clarifying questions.`,
-        ``,
-        `1. The product must let the target user complete the core job described in Proposed Solution, end to end, in a single session.`,
-        `2. The product must surface the value of the output before asking the user to do any manual cleanup.`,
-        `3. The product must not require setup steps beyond what's needed for the first successful use.`,
-        `4. The product must log enough usage signal to tell whether v1's core assumption (see Ideate's assumptions log) held up.`,
-      ].join("\n");
-    case "User Stories & Acceptance Criteria":
-      return buildUserStories(idea, shipsInV1);
-    case "Success Criteria":
-      return [
-        `# Success Criteria`,
-        ``,
-        `> Measurable, not aspirational.`,
-        ``,
-        `| Metric | Target | Why it proves the concept |`,
-        `| --- | --- | --- |`,
-        `| First-session completion rate | ≥ 50% | Confirms the core flow works without hand-holding |`,
-        `| Return usage within 7 days | ≥ 30% | Confirms the value repeats, not just novelty |`,
-        `| Qualitative fit signal | Positive in 7 of first 10 conversations | Confirms the riskiest assumption from Research held up |`,
-      ].join("\n");
-    case "Launch Plan":
-      return [
-        `# Launch Plan`,
+        `# Release Plan`,
         ``,
         `> Phased, tied to the stages still ahead in this pipeline.`,
         ``,
-        `1. **Design** — flows and screens for the in-scope stories above.`,
-        `2. **Code** — build against the acceptance criteria in this PRD.`,
-        `3. **Deploy** — ship to a small first cohort of the target user described in Product Overview.`,
+        `1. **Design** — flows and screens for the solution above.`,
+        `2. **Code** — build against the objective and key results in this PRD.`,
+        `3. **Deploy** — ship to a small first cohort of the market segment described above.`,
       ].join("\n");
-    case "Open Questions":
-      return [
-        `# Open Questions`,
-        ``,
-        `> Carried forward, not buried — anything still unresolved heading into Design.`,
-        ``,
-        bulletizeOpenQuestions(research),
-      ].join("\n");
+    case "Assumptions": {
+      const bullets = ideateAssumptions
+        ? ideateAssumptions
+            .split("\n")
+            .map((l) => l.replace(/^[-*]\s*/, "").trim())
+            .filter(Boolean)
+        : [];
+      const lines = [`# Assumptions`, ``, `> Flagged for team validation — nothing here has been proven yet.`, ``];
+      if (bullets.length) {
+        bullets.forEach((b) => lines.push(`- [ ] **Needs validation:** ${b}`));
+      } else {
+        lines.push(`- [ ] **Needs validation:** no assumptions were logged in Ideate's shared context.`);
+      }
+      return lines.join("\n");
+    }
     default:
       return [`# ${title}`, ``, `_No content generated for this section in mock mode._`].join("\n");
   }
@@ -272,25 +243,31 @@ export async function writePRDSections(
   idea: string,
   research: string,
   ideateBrief: string,
+  ideateAssumptions: string,
   outline: string[],
   reasoning: ReasoningPair[]
 ): Promise<PRDSection[]> {
   const mockJoined = outline
-    .map((title) => `${SECTION_DELIM}${title}%%%\n${mockSectionContent(title, idea, ideateBrief, research, reasoning)}`)
+    .map(
+      (title) => `${SECTION_DELIM}${title}%%%\n${mockSectionContent(title, idea, ideateBrief, research, ideateAssumptions, reasoning)}`
+    )
     .join("\n\n");
 
   const raw = await generateText({
     system:
       "You are the PRD agent in a product-development pipeline called ProductOS, writing an approved outline " +
-      "section by section. Ground every requirement in the ideation brief and research brief already in shared " +
-      "context — do not invent facts the user hasn't established. Write clean markdown per section: an H1 " +
-      "matching the section title, an italic one-line blockquote, then the section body (use tables/lists where " +
-      "natural; for 'User Stories & Acceptance Criteria' use '### Story N: <title>' headers with an As-a/I-want/" +
-      `so-that line plus an Acceptance criteria bullet list). Output exactly one block per outline title, each ` +
-      `starting with a line "${SECTION_DELIM}<Section Title>%%%" using the exact titles given, in order.`,
+      "section by section, structured the way engineering and leadership expect (not a generic user-story spec). " +
+      "Ground every claim in the ideation brief and research brief already in shared context — do not invent " +
+      "facts the user hasn't established. Write clean markdown per section: an H1 matching the section title, " +
+      "an italic one-line blockquote, then the section body (use tables/lists where natural; for 'Objective & " +
+      "Key Results' write one objective plus a SMART key-results table with Target/Timeframe columns; for " +
+      "'Assumptions' write each item as '- [ ] **Needs validation:** <assumption>', explicitly flagged for team " +
+      `validation, not stated as fact). Output exactly one block per outline title, each starting with a line ` +
+      `"${SECTION_DELIM}<Section Title>%%%" using the exact titles given, in order.`,
     prompt:
       `Product idea: "${idea}"\n\nOutline (write exactly these, in order):\n${outline.join("\n")}\n\n` +
-      `Ideation brief:\n${ideateBrief || "(none)"}\n\nResearch brief:\n${research || "(none)"}\n\nWrite all sections now.`,
+      `Ideation brief:\n${ideateBrief || "(none)"}\n\nIdeation assumptions log:\n${ideateAssumptions || "(none)"}\n\n` +
+      `Research brief:\n${research || "(none)"}\n\nWrite all sections now.`,
     mockFallback: () => mockJoined,
   });
 
@@ -313,16 +290,17 @@ export async function writePRDSections(
     return outline.map((title) => ({
       id: idFor(title),
       title,
-      content: mockSectionContent(title, idea, ideateBrief, research, reasoning),
+      content: mockSectionContent(title, idea, ideateBrief, research, ideateAssumptions, reasoning),
     }));
   }
 
   return sections;
 }
 
-export function countPRDStories(sections: PRDSection[]): number {
-  const storiesSection = sections.find((s) => s.title === "User Stories & Acceptance Criteria");
-  if (!storiesSection) return 0;
-  const matches = storiesSection.content.match(/^### Story \d+/gm);
+/** Counts flagged assumptions in the written Assumptions section — an honest, computed number for the closing message. */
+export function countFlaggedAssumptions(sections: PRDSection[]): number {
+  const assumptionsSection = sections.find((s) => s.title === "Assumptions");
+  if (!assumptionsSection) return 0;
+  const matches = assumptionsSection.content.match(/^- \[ \]/gm);
   return matches ? matches.length : 0;
 }
