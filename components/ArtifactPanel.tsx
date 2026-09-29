@@ -128,10 +128,10 @@ function ResearchArtifacts({ project }: { project: ProjectContext }) {
 }
 
 /**
- * Define/PRD runs behind an outline-approval gate (see docs/AGENTS.md):
- * a proposed outline while waiting on approval, then an outline sidebar +
- * section viewer once sections are written — mirroring the reference
- * screenshot's "PRD Outline" panel + "Product Overview 1/9" section view.
+ * Define/PRD writes straight into the "ProductOS Standard" outline (no
+ * approval gate in this reference build — see docs/AGENTS.md), then shows
+ * an outline sidebar + section viewer once sections are written, mirroring
+ * the reference screenshot's "PRD Outline" panel + section view.
  * Architecture/Constraints tabs are Later-phase (Architect Agent) — stubbed.
  */
 function PRDArtifactPanel({ project }: { project: ProjectContext }) {
@@ -175,26 +175,7 @@ function PRDArtifactPanel({ project }: { project: ProjectContext }) {
         </span>
       </div>
 
-      {stage.status === "waiting" ? (
-        <div className="flex-1 overflow-auto px-6 py-5">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/30">
-            PRD Outline — awaiting your approval
-          </p>
-          <p className="mb-4 text-sm text-white/40">
-            ProductOS Standard template · {outline.length} sections. Approve the outline on the left to start writing.
-          </p>
-          <ol className="space-y-2">
-            {outline.map((t, i) => (
-              <li
-                key={i}
-                className="flex items-center gap-2 rounded-md border border-border bg-black/20 px-3 py-2 text-sm text-white/70"
-              >
-                <span className="text-white/30">{i + 1}.</span> {t}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ) : !sections.length ? (
+      {!sections.length ? (
         <div className="flex-1 px-6 py-5">
           <p className="text-sm text-white/30">Waiting for this stage to run…</p>
         </div>

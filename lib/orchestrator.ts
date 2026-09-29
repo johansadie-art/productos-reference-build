@@ -189,10 +189,11 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   saveProject(project);
 
   // --- PRD (Define) ---
-  // Per docs/AGENTS.md: the PRD agent writes sections behind an
-  // outline-approval gate — it scaffolds the outline first and pauses
-  // (mirrors Ideate's "waiting" pattern) until the user approves it via
-  // submitPRDOutlineApproval(), instead of writing the whole doc at once.
+  // Per docs/AGENTS.md: the PRD agent cuts scope with a self-directed
+  // reasoning trace, then writes straight into the "ProductOS Standard"
+  // outline — no outline-approval gate in this reference build (only one
+  // template exists, so there's nothing to approve between; see
+  // docs/ROADMAP.md for a real approval/revision gate across templates).
   project.stages.PRD.status = "running";
   log(project, "PRD", "Turning research into requirements…");
   saveProject(project);
@@ -204,46 +205,13 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   saveProject(project);
   await sleep(300);
 
+  const ideateAssumptions = project.sharedContext["ideate.assumptions"] ?? "";
   project.prdReasoning = await runPRDReasoning(project.idea, ideateBrief);
   project.prdOutline = await proposePRDOutline(project.idea, combined);
-  project.stages.PRD.status = "waiting";
-  log(project, "PRD", "Outline proposed — waiting on your approval to start writing sections.");
-  saveProject(project);
-}
-
-/**
- * Called once the user approves the PRD outline. Writes each section in
- * turn against the approved outline, then continues the rest of the
- * pipeline (Design/Code/Deploy stubs), mirroring the submitIdeateAnswer /
- * runRestOfPipeline split used for the Ideate gate.
- */
-export async function submitPRDOutlineApproval(id: string): Promise<ProjectContext> {
-  const project = loadProject(id);
-  if (!project) throw new Error("project not found");
-  if (project.stages.PRD.status !== "waiting") return project; // ignore stray/duplicate submits
-
-  project.stages.PRD.status = "running";
-  log(project, "PRD", "Outline approved — writing sections one at a time…");
-  saveProject(project);
-
-  writePRDAndContinue(project).catch((err) => {
-    console.error("[orchestrator] PRD section writing failed:", err);
-    project.status = "error";
-    log(project, "System", `PRD failed: ${String(err)}`);
-    saveProject(project);
-  });
-
-  return project;
-}
-
-async function writePRDAndContinue(project: ProjectContext) {
-  const ideateBrief = project.sharedContext["ideate.output"] ?? "";
-  const ideateAssumptions = project.sharedContext["ideate.assumptions"] ?? "";
-  const research = project.sharedContext["research.output"] ?? "";
 
   const sections = await writePRDSections(
     project.idea,
-    research,
+    combined,
     ideateBrief,
     ideateAssumptions,
     project.prdOutline,
@@ -251,12 +219,12 @@ async function writePRDAndContinue(project: ProjectContext) {
   );
   project.prdSections = sections;
 
-  const combined = sections.map((s) => `# ${s.title}\n\n${s.content}`).join("\n\n---\n\n");
-  project.stages.PRD = { status: "done", content: combined };
-  project.sharedContext["prd.output"] = combined;
+  const prdDoc = sections.map((s) => `# ${s.title}\n\n${s.content}`).join("\n\n---\n\n");
+  project.stages.PRD = { status: "done", content: prdDoc };
+  project.sharedContext["prd.output"] = prdDoc;
 
   const flaggedCount = countFlaggedAssumptions(sections);
-  project.prdApprovalSummary = `PRD approved. ${flaggedCount} ${flaggedCount === 1 ? "assumption" : "assumptions"} flagged for team validation.`;
+  project.prdApprovalSummary = `PRD drafted. ${flaggedCount} ${flaggedCount === 1 ? "assumption" : "assumptions"} flagged for team validation.`;
   log(project, "PRD", "PRD drafted — wrote spec to shared context.");
   saveProject(project);
 

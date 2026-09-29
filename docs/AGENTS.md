@@ -8,7 +8,7 @@ grows past the Now-phase scope in `docs/ROADMAP.md`. **Build status** reflects t
 |---|---|---|---|---|---|
 | 1 | **Ideation** | QUESTIONER — draws the concept out of the user, doesn't invent it | Raw idea, prior concept brief, project wiki | Concept brief (problem, target user, assumptions) + open-questions log for Research | **Real** — conversational, mock+live (see below) |
 | 2 | **Research** | INVESTIGATOR — grounds every claim in a clickable source | Ideation brief, a research task, workspace customer signals | Sourced findings, competitor registry, per-topic docs, rolling brief, survey links | **Partial** — 4 parallel per-topic docs (`write_research_run` shape) + self-directed reasoning trace, mock+live; no real multi-source fan-out (Exa/Reddit/app-store search), no surveys |
-| 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | 8-section PRD (Summary, Background, Objective & Key Results, Market Segments, Value Propositions, Solution, Release Plan, Assumptions), 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — real outline-approval gate + section-by-section writing (ProductOS Standard template only), mock+live; no PRFAQ/Lean/Enterprise templates, no revision-mode targeted edits |
+| 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | 8-section PRD (Summary, Background, Objective & Key Results, Market Segments, Value Propositions, Solution, Release Plan, Assumptions), 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — scope-cutting reasoning + section-by-section writing against the ProductOS Standard outline (mock+live); no outline-approval gate (only one template exists in this build, so nothing to choose between — see below), no PRFAQ/Lean/Enterprise templates, no revision-mode targeted edits |
 | 4 | **Architect** | Optional technical deep-dive in Define: system/DB/API/deploy/security architecture, ADRs, cost estimates | PRD sections, locked constraints, tech-stack facts | 8 architecture sections, ADRs, infra cost estimates | Not built (Later) |
 | 5 | **Design** | Turns concept+research+PRD into user flows and UI screen specs | Concept, research, PRD, locked brand direction | User-flow diagrams, UI screen specs, design docs/reports | Stubbed (Next) |
 | 6 | **Design System** | Senior visual designer; builds tokens, component system, DESIGN.md; renders HTML previews | Locked brand guidelines/assets, mood board, PRD personality notes | DESIGN.md, dark/light preview pages, token source for build agents | Not built (Later) |
@@ -46,14 +46,15 @@ Ideate), matching the `write_research_run` shape in the row above. It's still **
 illustrative/mock or single-pass live-LLM reasoning, not real multi-source search (Exa/Reddit/app-store/GitHub),
 and there's no survey generation.
 
-PRD/Define now runs behind a real outline-approval gate: it cuts scope with a two-question self-directed
-reasoning trace (what ships in v1 / what waits for later, mirroring Research's pattern), proposes the real
-8-section "ProductOS Standard" outline — Summary, Background, Objective & Key Results (SMART), Market
-Segments, Value Propositions, Solution, Release Plan, Assumptions — pauses (`waiting`, same mechanic as
-Ideate's question gate) until the user approves it via `submitPRDOutlineApproval()`, then writes each section
-in turn, pulling Assumptions straight from Ideate's assumptions log and flagging each one
-`- [ ] **Needs validation:**` rather than stating it as fact. See `lib/agents/prd.ts`. It's still **Partial**:
-only the Standard template exists (PRFAQ/Lean/Enterprise are Next-phase), there's no revision mode for
-targeted per-section edits, and the outline itself isn't editable before approval. Design and the rest remain
-stubbed/not built (no sandboxed code execution, no headless browser, no real deploy). That gap is
-intentional — see `docs/ROADMAP.md` for phasing — not an oversight.
+PRD/Define cuts scope with a two-question self-directed reasoning trace (what ships in v1 / what waits for
+later, mirroring Research's pattern), then writes straight into the real 8-section "ProductOS Standard"
+outline — Summary, Background, Objective & Key Results (SMART), Market Segments, Value Propositions,
+Solution, Release Plan, Assumptions — pulling Assumptions straight from Ideate's assumptions log and flagging
+each one `- [ ] **Needs validation:**` rather than stating it as fact. See `lib/agents/prd.ts`. There is
+deliberately **no outline-approval gate** in this reference build (per explicit user decision, 2026-09-29):
+with only the Standard template implemented, there's nothing to choose between before writing — an approval
+step would just be a no-op click. A real gate (with template choice + a genuine "approve this outline vs. a
+different one" decision) is Next-phase once PRFAQ/Lean/Enterprise exist — see `docs/ROADMAP.md`. It's still
+**Partial** otherwise: only the Standard template exists, and there's no revision mode for targeted
+per-section edits. Design and the rest remain stubbed/not built (no sandboxed code execution, no headless
+browser, no real deploy). That gap is intentional — see `docs/ROADMAP.md` for phasing — not an oversight.
