@@ -45,13 +45,14 @@ export default function Home() {
     projectType: ProjectType,
     startStage: NavStageId,
     category?: string,
-    subcategory?: string
+    subcategory?: string,
+    dependsOn?: string[]
   ) {
     setSubmitting(true);
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idea, projectType, startStage, category, subcategory }),
+      body: JSON.stringify({ idea, projectType, startStage, category, subcategory, dependsOn }),
     });
     const data: ProjectContext = await res.json();
     setProject(data);

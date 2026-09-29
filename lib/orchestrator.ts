@@ -106,10 +106,12 @@ export function startPipeline(
   projectType: ProjectType = "web_app",
   startStage?: string,
   category?: string,
-  subcategory?: string
+  subcategory?: string,
+  dependsOn?: string[]
 ): ProjectContext {
   const id = randomUUID();
   const project = emptyProject(id, idea, projectType, startStage, category, subcategory);
+  if (dependsOn?.length) project.dependsOn = dependsOn;
   project.stages.Ideate.status = "waiting";
   saveProject(project);
 

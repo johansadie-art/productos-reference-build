@@ -200,6 +200,14 @@ export interface ProjectContext {
   // a clustered card on the dashboard instead of separate top-level cards.
   // Leave unset for the common case of one PRD directly under a category.
   subcategory?: string;
+  // Cross-feature dependency: other projects' ids that THIS feature needs
+  // first (e.g. a new loan product that needs a new login/verification
+  // capability to exist before it can really ship). Purely a dashboard
+  // annotation in this reference build — it's illustrated visually (a
+  // "Depends on" / "Blocked by" chip, coloured by whether the dependency
+  // is actually done) but doesn't gate the pipeline itself; see
+  // components/HomeScreen.tsx's DependencyChips.
+  dependsOn?: string[];
   createdAt: string;
   status: "running" | "done" | "error";
   mode: "mock" | "live";

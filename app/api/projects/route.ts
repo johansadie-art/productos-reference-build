@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
   const category = typeof body.category === "string" && body.category.trim() ? body.category.trim() : undefined;
   const subcategory =
     typeof body.subcategory === "string" && body.subcategory.trim() ? body.subcategory.trim() : undefined;
-  const project = startPipeline(idea, projectType, startStage, category, subcategory);
+  const dependsOn =
+    Array.isArray(body.dependsOn) ? body.dependsOn.filter((id: unknown): id is string => typeof id === "string") : undefined;
+  const project = startPipeline(idea, projectType, startStage, category, subcategory, dependsOn);
   return NextResponse.json(project);
 }
 

@@ -17,7 +17,8 @@ type SubmitFn = (
   projectType: ProjectType,
   startStage: NavStageId,
   category?: string,
-  subcategory?: string
+  subcategory?: string,
+  dependsOn?: string[]
 ) => void;
 
 /**
@@ -76,6 +77,88 @@ function ComboField({
 }
 
 /**
+ * Picks other existing features this one depends on (e.g. a new loan
+ * product that needs a new login/verification capability first) — a
+ * multi-select combo: type to filter, click to add, shown as removable
+ * chips. Purely a dashboard annotation, see ProjectContext.dependsOn.
+ */
+function DependsOnField({
+  value,
+  onChange,
+  allProjects,
+}: {
+  value: string[];
+  onChange: (ids: string[]) => void;
+  allProjects: ProjectContext[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selected = allProjects.filter((p) => value.includes(p.id));
+  const options = allProjects.filter(
+    (p) => !value.includes(p.id) && p.idea.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  function toggle(id: string) {
+    onChange(value.includes(id) ? value.filter((v) => v !== id) : [...value, id]);
+  }
+
+  return (
+    <div className="relative mt-2">
+      <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-border bg-transparent px-2.5 py-1.5">
+        {selected.map((p) => (
+          <span
+            key={p.id}
+            className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[11px] text-white/80"
+          >
+            {p.idea}
+            <button
+              type="button"
+              onClick={() => toggle(p.id)}
+              className="text-white/40 hover:text-white"
+              aria-label={`Remove dependency on ${p.idea}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 100)}
+          placeholder={
+            selected.length ? "Add another…" : "Depends on (optional) — e.g. a login/auth PRD this needs first"
+          }
+          className="min-w-[140px] flex-1 bg-transparent text-xs outline-none placeholder:text-white/25"
+        />
+      </div>
+      {open && options.length > 0 && (
+        <div className="absolute left-0 top-full z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-border bg-panel py-1 shadow-xl">
+          {options.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                toggle(p.id);
+                setQuery("");
+              }}
+              className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs text-white/70 hover:bg-white/10"
+            >
+              <span className="truncate">{p.idea}</span>
+              <span className="shrink-0 text-white/30">
+                {p.category ?? "Other"}
+                {p.subcategory ? ` · ${p.subcategory}` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * The "new feature" form — what used to be the entire home screen before
  * this became a portfolio dashboard (see the "land on multiple features"
  * request, 2026-09-29). Always visible at the top of the dashboard (not
@@ -92,6 +175,7 @@ function NewProjectForm({
   initial,
   categories,
   subcategoriesByCategory,
+  allProjects,
 }: {
   onSubmit: SubmitFn;
   submitting: boolean;
@@ -100,10 +184,13 @@ function NewProjectForm({
   categories: string[];
   /** Every distinct feature already used, grouped by its category, for the Feature dropdown. */
   subcategoriesByCategory: Record<string, string[]>;
+  /** Every existing project, for the "Depends on" picker. */
+  allProjects: ProjectContext[];
 }) {
   const [idea, setIdea] = useState("");
   const [category, setCategory] = useState(initial?.category ?? "");
   const [subcategory, setSubcategory] = useState(initial?.subcategory ?? "");
+  const [dependsOn, setDependsOn] = useState<string[]>([]);
   const [projectType, setProjectType] = useState<ProjectType>("web_app");
   const [startStage, setStartStage] = useState<NavStageId>("Ideate");
   const [typeOpen, setTypeOpen] = useState(false);
@@ -112,10 +199,18 @@ function NewProjectForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!idea.trim() || submitting) return;
-    onSubmit(idea.trim(), projectType, startStage, category.trim() || undefined, subcategory.trim() || undefined);
+    onSubmit(
+      idea.trim(),
+      projectType,
+      startStage,
+      category.trim() || undefined,
+      subcategory.trim() || undefined,
+      dependsOn.length ? dependsOn : undefined
+    );
     setIdea("");
     setCategory("");
     setSubcategory("");
+    setDependsOn([]);
   }
 
   // Feature options narrow to the selected category once one's picked
@@ -154,6 +249,8 @@ function NewProjectForm({
           placeholder="Feature (optional, e.g. Login) — clusters multiple PRDs under one feature"
         />
       </div>
+
+      <DependsOnField value={dependsOn} onChange={setDependsOn} allProjects={allProjects} />
 
       <div className="mt-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -288,7 +385,61 @@ function StageDots({ project }: { project: ProjectContext }) {
   );
 }
 
-function ProjectCard({ project, onOpen }: { project: ProjectContext; onOpen: () => void }) {
+/**
+ * Illustrates a cross-feature dependency (e.g. a new loan product that
+ * needs a new login/verification capability first): resolves
+ * `project.dependsOn`'s ids to the other project(s) and shows a small
+ * chip per one, coloured by whether that dependency is actually done yet.
+ * Purely a visual signal in this reference build — see
+ * ProjectContext.dependsOn's doc comment for why it doesn't gate the
+ * pipeline itself.
+ */
+function DependencyChips({
+  project,
+  allProjectsById,
+}: {
+  project: ProjectContext;
+  allProjectsById: Map<string, ProjectContext>;
+}) {
+  if (!project.dependsOn?.length) return null;
+  const deps = project.dependsOn.map((id) => allProjectsById.get(id)).filter((p): p is ProjectContext => !!p);
+  if (deps.length === 0) return null;
+  return (
+    <div className="mb-2 flex flex-wrap gap-1">
+      {deps.map((dep) => {
+        const blocked = !getProjectProgress(dep).isDone;
+        return (
+          <span
+            key={dep.id}
+            title={
+              blocked
+                ? `Blocked until "${dep.idea}" is done`
+                : `Depends on "${dep.idea}" — already done, so this is clear to proceed`
+            }
+            className={`inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+              blocked
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-400"
+                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            }`}
+          >
+            <span className="shrink-0">{blocked ? "🔗 Blocked by" : "🔗 Depends on"}</span>
+            <span className="truncate">{dep.idea}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function ProjectCard({
+  project,
+  onOpen,
+  allProjectsById,
+}: {
+  project: ProjectContext;
+  onOpen: () => void;
+  allProjectsById: Map<string, ProjectContext>;
+}) {
   const progress = getProjectProgress(project);
   return (
     <button
@@ -301,6 +452,7 @@ function ProjectCard({ project, onOpen }: { project: ProjectContext; onOpen: () 
           {PROJECT_TYPE_LABEL[project.projectType]}
         </span>
       </div>
+      <DependencyChips project={project} allProjectsById={allProjectsById} />
       <p
         className={`mb-3 text-xs font-medium ${
           progress.isDone ? "text-emerald-400" : progress.isWaiting ? "text-amber-400" : "text-white/50"
@@ -326,11 +478,13 @@ function FeatureClusterCard({
   items,
   onOpen,
   onAddPrd,
+  allProjectsById,
 }: {
   name: string;
   items: ProjectContext[];
   onOpen: (p: ProjectContext) => void;
   onAddPrd: () => void;
+  allProjectsById: Map<string, ProjectContext>;
 }) {
   const doneCount = items.filter((p) => getProjectProgress(p).isDone).length;
   return (
@@ -351,6 +505,7 @@ function FeatureClusterCard({
               className="flex w-full flex-col rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-left transition hover:border-white/15 hover:bg-white/[0.05]"
             >
               <span className="text-xs font-medium leading-snug text-white/80">{p.idea}</span>
+              <DependencyChips project={p} allProjectsById={allProjectsById} />
               <p
                 className={`mt-1 text-[10px] font-medium ${
                   progress.isDone ? "text-emerald-400" : progress.isWaiting ? "text-amber-400" : "text-white/40"
@@ -475,6 +630,14 @@ export function HomeScreen({
     return map;
   }, [projects]);
 
+  // Looks up any project by id, for resolving `dependsOn` into a name +
+  // real status — see DependencyChips.
+  const allProjectsById = useMemo(() => {
+    const map = new Map<string, ProjectContext>();
+    (projects ?? []).forEach((p) => map.set(p.id, p));
+    return map;
+  }, [projects]);
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-8">
@@ -493,6 +656,7 @@ export function HomeScreen({
           initial={formSeed}
           categories={categories}
           subcategoriesByCategory={subcategoriesByCategory}
+          allProjects={projects ?? []}
         />
       </div>
 
@@ -515,10 +679,16 @@ export function HomeScreen({
                       items={subItems}
                       onOpen={onOpenProject}
                       onAddPrd={() => openFormFor({ category, subcategory: sub })}
+                      allProjectsById={allProjectsById}
                     />
                   ))}
                   {standalone.map((p) => (
-                    <ProjectCard key={p.id} project={p} onOpen={() => onOpenProject(p)} />
+                    <ProjectCard
+                      key={p.id}
+                      project={p}
+                      onOpen={() => onOpenProject(p)}
+                      allProjectsById={allProjectsById}
+                    />
                   ))}
                 </div>
               </div>

@@ -114,3 +114,12 @@ ones (Password Login, Biometric Login, MFA, SSO, Forgot Password), each with its
 projects sharing a (category, subcategory) render as one clustered card with a compact status row per sub-PRD
 instead of separate top-level cards — see `FeatureClusterCard` in `components/HomeScreen.tsx` and the 5 Login
 sub-PRDs in `lib/seed.ts`. A feature with only one PRD just omits `subcategory` and renders as before.
+
+Second follow-up (same day): "a new loan type has a dependency on new login information — how do we
+illustrate that?" `ProjectContext.dependsOn` is a list of other projects' ids a feature needs first. It's
+purely a dashboard annotation, not a pipeline gate — it doesn't stop the feature's own Ideate→Design run — but
+it's illustrated visually as a small chip on the card, coloured by whether the dependency is actually done:
+amber "🔗 Blocked by X" if not, emerald "🔗 Depends on X" if it already is. See `DependencyChips` in
+`components/HomeScreen.tsx`, the "Depends on" picker in the new-feature form, and the concrete example in
+`lib/seed.ts` — "Instant Personal Loan Approval" depends on both Multi-Factor Authentication (not done yet →
+renders as blocking) and Password Login (already done → renders as clear).

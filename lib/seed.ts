@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import { emptyProject } from "./orchestrator";
 import { saveProject, listProjects } from "./store";
 import { ProjectContext, ProjectType } from "./types";
@@ -40,12 +39,22 @@ function sayUser(project: ProjectContext, content: string) {
 type StopAt = "waiting" | "ideate" | "research" | "prd" | "design" | "done";
 
 interface DemoSpec {
+  // A stable id (not a random uuid) so OTHER specs can reference this one
+  // via `dependsOn` before it's actually built — order in this array
+  // still doesn't matter, ensureDemoSeed() just needs every id to exist
+  // somewhere in the array.
+  id: string;
   idea: string;
   category: string;
   // A feature that decomposes into several independent PRDs (e.g. Login)
   // sets the same subcategory on each of its sub-PRDs; leave unset for the
   // common one-PRD-per-feature case. See lib/types.ts's ProjectContext.
   subcategory?: string;
+  // Illustrates a cross-feature dependency — e.g. a new loan product that
+  // needs a new login/verification capability first. See
+  // ProjectContext.dependsOn and components/HomeScreen.tsx's
+  // DependencyChips for how this renders.
+  dependsOn?: string[];
   projectType: ProjectType;
   /** Answers to the Ideation Agent's 2 clarifying questions — [product name, target user]. */
   answers: [string, string];
@@ -54,6 +63,7 @@ interface DemoSpec {
 
 const DEMO_SPECS: DemoSpec[] = [
   {
+    id: "checking-account",
     idea: "Checking Account",
     category: "Accounts",
     projectType: "mobile_app",
@@ -61,6 +71,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "design",
   },
   {
+    id: "savings-account",
     idea: "Savings Account",
     category: "Accounts",
     projectType: "mobile_app",
@@ -68,6 +79,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "prd",
   },
   {
+    id: "high-yield-account",
     idea: "High-Yield Account",
     category: "Accounts",
     projectType: "mobile_app",
@@ -75,6 +87,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "research",
   },
   {
+    id: "money-market-account",
     idea: "Money Market Account",
     category: "Accounts",
     projectType: "mobile_app",
@@ -82,6 +95,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "ideate",
   },
   {
+    id: "transfer-funds",
     idea: "Transfer Funds",
     category: "Payments & Transfers",
     projectType: "mobile_app",
@@ -89,6 +103,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "prd",
   },
   {
+    id: "pay-a-person",
     idea: "Pay a Person",
     category: "Payments & Transfers",
     projectType: "mobile_app",
@@ -96,6 +111,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "research",
   },
   {
+    id: "bill-pay",
     idea: "Bill Pay",
     category: "Payments & Transfers",
     projectType: "mobile_app",
@@ -103,6 +119,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "ideate",
   },
   {
+    id: "manage-my-cards",
     idea: "Manage My Cards",
     category: "Cards & Loans",
     projectType: "mobile_app",
@@ -110,6 +127,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "waiting",
   },
   {
+    id: "loan-center",
     idea: "Loan Center",
     category: "Cards & Loans",
     projectType: "mobile_app",
@@ -121,6 +139,7 @@ const DEMO_SPECS: DemoSpec[] = [
   // different point in the pipeline. Sharing `subcategory: "Login"` groups
   // them into one card instead of 5 separate top-level ones.
   {
+    id: "login-password",
     idea: "Password Login",
     category: "Core Flows",
     subcategory: "Login",
@@ -129,6 +148,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "done",
   },
   {
+    id: "login-biometric",
     idea: "Biometric Login",
     category: "Core Flows",
     subcategory: "Login",
@@ -137,6 +157,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "design",
   },
   {
+    id: "login-mfa",
     idea: "Multi-Factor Authentication",
     category: "Core Flows",
     subcategory: "Login",
@@ -145,6 +166,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "prd",
   },
   {
+    id: "login-sso",
     idea: "Single Sign-On (SSO)",
     category: "Core Flows",
     subcategory: "Login",
@@ -153,6 +175,7 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "research",
   },
   {
+    id: "login-forgot-password",
     idea: "Forgot Password",
     category: "Core Flows",
     subcategory: "Login",
@@ -161,16 +184,34 @@ const DEMO_SPECS: DemoSpec[] = [
     stopAt: "waiting",
   },
   {
+    id: "onboarding",
     idea: "Onboarding",
     category: "Core Flows",
     projectType: "mobile_app",
     answers: ["Onboarding", "New members setting up the app for the first time"],
     stopAt: "prd",
   },
+  // The concrete example for "a new loan type has a dependency on new
+  // login information": this loan feature can't really ship until the
+  // login side is ready — it depends on Multi-Factor Authentication
+  // (still just a PRD, not built — renders "🔗 Blocked by") AND on
+  // Password Login (already done — renders "🔗 Depends on", not blocking).
+  // Purely a dashboard annotation (see ProjectContext.dependsOn); it
+  // doesn't stop this feature's own pipeline from running here.
+  {
+    id: "loan-instant-approval",
+    idea: "Instant Personal Loan Approval",
+    category: "Cards & Loans",
+    dependsOn: ["login-mfa", "login-password"],
+    projectType: "mobile_app",
+    answers: ["Instant Personal Loan Approval", "Members who want a same-day decision on a personal loan"],
+    stopAt: "research",
+  },
 ];
 
 async function buildDemoProject(spec: DemoSpec): Promise<ProjectContext> {
-  const project = emptyProject(randomUUID(), spec.idea, spec.projectType, undefined, spec.category, spec.subcategory);
+  const project = emptyProject(spec.id, spec.idea, spec.projectType, undefined, spec.category, spec.subcategory);
+  if (spec.dependsOn?.length) project.dependsOn = spec.dependsOn;
 
   // --- Ideate ---
   project.stages.Ideate.status = "waiting";
