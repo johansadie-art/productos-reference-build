@@ -42,6 +42,10 @@ type StopAt = "waiting" | "ideate" | "research" | "prd" | "design" | "done";
 interface DemoSpec {
   idea: string;
   category: string;
+  // A feature that decomposes into several independent PRDs (e.g. Login)
+  // sets the same subcategory on each of its sub-PRDs; leave unset for the
+  // common one-PRD-per-feature case. See lib/types.ts's ProjectContext.
+  subcategory?: string;
   projectType: ProjectType;
   /** Answers to the Ideation Agent's 2 clarifying questions — [product name, target user]. */
   answers: [string, string];
@@ -112,12 +116,49 @@ const DEMO_SPECS: DemoSpec[] = [
     answers: ["Loan Center", "Members exploring auto, personal, and home loans"],
     stopAt: "done",
   },
+  // Login is the example the dashboard needs to handle well: it's not one
+  // PRD, it's a cluster of several — each independently scoped, each at a
+  // different point in the pipeline. Sharing `subcategory: "Login"` groups
+  // them into one card instead of 5 separate top-level ones.
   {
-    idea: "Login",
+    idea: "Password Login",
     category: "Core Flows",
+    subcategory: "Login",
     projectType: "mobile_app",
-    answers: ["Login", "Any returning member authenticating into the app"],
+    answers: ["Password Login", "Any returning member authenticating with username + password"],
     stopAt: "done",
+  },
+  {
+    idea: "Biometric Login",
+    category: "Core Flows",
+    subcategory: "Login",
+    projectType: "mobile_app",
+    answers: ["Biometric Login", "Returning members who want Face ID / fingerprint sign-in"],
+    stopAt: "design",
+  },
+  {
+    idea: "Multi-Factor Authentication",
+    category: "Core Flows",
+    subcategory: "Login",
+    projectType: "mobile_app",
+    answers: ["Multi-Factor Authentication", "Members opting into a second factor for higher-value accounts"],
+    stopAt: "prd",
+  },
+  {
+    idea: "Single Sign-On (SSO)",
+    category: "Core Flows",
+    subcategory: "Login",
+    projectType: "mobile_app",
+    answers: ["Single Sign-On", "Members who also use partner sites and want one login"],
+    stopAt: "research",
+  },
+  {
+    idea: "Forgot Password",
+    category: "Core Flows",
+    subcategory: "Login",
+    projectType: "mobile_app",
+    answers: ["Forgot Password", ""],
+    stopAt: "waiting",
   },
   {
     idea: "Onboarding",
@@ -129,7 +170,7 @@ const DEMO_SPECS: DemoSpec[] = [
 ];
 
 async function buildDemoProject(spec: DemoSpec): Promise<ProjectContext> {
-  const project = emptyProject(randomUUID(), spec.idea, spec.projectType, undefined, spec.category);
+  const project = emptyProject(randomUUID(), spec.idea, spec.projectType, undefined, spec.category, spec.subcategory);
 
   // --- Ideate ---
   project.stages.Ideate.status = "waiting";

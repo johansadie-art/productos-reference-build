@@ -107,3 +107,10 @@ are no projects, by calling the same real agent functions above (no hand-written
 different real pipeline stage so the dashboard shows genuinely varied statuses (waiting on an answer, Ideate-
 only, Research-only, PRD-only, Design-only, fully complete) — see `lib/projectProgress.ts` for how a project's
 status badge is derived.
+
+Follow-up (same day): a feature like Login usually isn't one PRD — it decomposes into several independent
+ones (Password Login, Biometric Login, MFA, SSO, Forgot Password), each with its own pipeline progress.
+`ProjectContext.subcategory` is a second, optional grouping level within a category for exactly this case;
+projects sharing a (category, subcategory) render as one clustered card with a compact status row per sub-PRD
+instead of separate top-level cards — see `FeatureClusterCard` in `components/HomeScreen.tsx` and the 5 Login
+sub-PRDs in `lib/seed.ts`. A feature with only one PRD just omits `subcategory` and renders as before.

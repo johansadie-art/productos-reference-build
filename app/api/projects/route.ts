@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
   const projectType: ProjectType = VALID_TYPES.includes(body.projectType) ? body.projectType : "web_app";
   const startStage = typeof body.startStage === "string" ? body.startStage : undefined;
   const category = typeof body.category === "string" && body.category.trim() ? body.category.trim() : undefined;
-  const project = startPipeline(idea, projectType, startStage, category);
+  const subcategory =
+    typeof body.subcategory === "string" && body.subcategory.trim() ? body.subcategory.trim() : undefined;
+  const project = startPipeline(idea, projectType, startStage, category, subcategory);
   return NextResponse.json(project);
 }
 

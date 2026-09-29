@@ -40,12 +40,18 @@ export default function Home() {
     }, 900);
   }
 
-  async function handleSubmit(idea: string, projectType: ProjectType, startStage: NavStageId, category?: string) {
+  async function handleSubmit(
+    idea: string,
+    projectType: ProjectType,
+    startStage: NavStageId,
+    category?: string,
+    subcategory?: string
+  ) {
     setSubmitting(true);
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idea, projectType, startStage, category }),
+      body: JSON.stringify({ idea, projectType, startStage, category, subcategory }),
     });
     const data: ProjectContext = await res.json();
     setProject(data);

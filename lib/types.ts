@@ -192,6 +192,14 @@ export interface ProjectContext {
   // progress, not just one idea at a time. Optional; ungrouped projects
   // fall under "Other" in the UI. See lib/seed.ts for example data.
   category?: string;
+  // A second, optional grouping level *within* a category — for when one
+  // feature genuinely decomposes into several independent PRDs rather than
+  // being one PRD itself (e.g. "Login" isn't one PRD, it's Password Login +
+  // Biometric Login + MFA + SSO + Forgot Password, each with its own
+  // pipeline). Projects sharing the same (category, subcategory) render as
+  // a clustered card on the dashboard instead of separate top-level cards.
+  // Leave unset for the common case of one PRD directly under a category.
+  subcategory?: string;
   createdAt: string;
   status: "running" | "done" | "error";
   mode: "mock" | "live";

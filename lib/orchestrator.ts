@@ -14,7 +14,14 @@ import { stubCode, stubDeploy } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
 
-export function emptyProject(id: string, idea: string, projectType: ProjectType, startStage?: string, category?: string): ProjectContext {
+export function emptyProject(
+  id: string,
+  idea: string,
+  projectType: ProjectType,
+  startStage?: string,
+  category?: string,
+  subcategory?: string
+): ProjectContext {
   const stages = STAGE_ORDER.reduce(
     (acc, s) => ({ ...acc, [s]: { status: "pending" as const, content: "" } }),
     {} as ProjectContext["stages"]
@@ -34,6 +41,7 @@ export function emptyProject(id: string, idea: string, projectType: ProjectType,
     idea,
     projectType,
     category,
+    subcategory,
     createdAt: new Date().toISOString(),
     status: "running",
     mode: getMode(),
@@ -97,10 +105,11 @@ export function startPipeline(
   idea: string,
   projectType: ProjectType = "web_app",
   startStage?: string,
-  category?: string
+  category?: string,
+  subcategory?: string
 ): ProjectContext {
   const id = randomUUID();
-  const project = emptyProject(id, idea, projectType, startStage, category);
+  const project = emptyProject(id, idea, projectType, startStage, category, subcategory);
   project.stages.Ideate.status = "waiting";
   saveProject(project);
 
