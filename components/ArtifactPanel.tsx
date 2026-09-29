@@ -37,7 +37,11 @@ export function ArtifactPanel({ project, active }: { project: ProjectContext; ac
         {content ? (
           <MarkdownDoc content={content} />
         ) : (
-          <p className="text-sm text-white/30">Waiting for this stage to run…</p>
+          <p className="text-sm text-white/30">
+            {stage.status === "waiting"
+              ? "Answer the Ideation Agent's questions on the left to generate this doc."
+              : "Waiting for this stage to run…"}
+          </p>
         )}
       </div>
 

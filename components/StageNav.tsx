@@ -3,7 +3,7 @@ import { NAV_STAGES, NavStageId, STAGE_UI } from "@/lib/stageUi";
 
 function isDoneOrRunning(project: ProjectContext, id: NavStageId): boolean {
   const s = project.stages[id];
-  return s.status === "done" || s.status === "stubbed" || s.status === "running";
+  return s.status === "done" || s.status === "stubbed" || s.status === "running" || s.status === "waiting";
 }
 
 export function StageNav({

@@ -38,11 +38,22 @@
   - Multi-provider research fan-out (SerpAPI/Exa/Perplexity) if single-provider research proves the concept
 
 ## Later (backlog / parked)
+
+See `docs/AGENTS.md` for the full real-agent roster (roles, reads/produces, tool surface) this backlog is
+scoped against.
+
+- **Architect Agent** — 8 architecture sections (system overview, containers, DB/API, deploy, security, patterns, risks), ADRs, infra cost estimates
+- **Design System Agent** — production-ready tokens/component system, DESIGN.md, live dark/light HTML previews
+- **Fullstack Builder** — real sandboxed coding agent (not a stub) implementing from design tokens + PRD
+- **Code Review Agent** — full-codebase security/performance/architecture review with health scores
+- **QA Agent** — real headless-browser verification against a live preview (critical flows, API checks, a11y)
+- **Deploy Agent** — real GitHub push + Vercel deploy + build-log-driven auto-fix loop
 - Native mobile codegen (Expo, iOS/Android + store deploy)
-- Real GitHub sync + real deploy pipeline (SSL, custom domains)
 - MCP server (58-tool surface) for Cursor/Claude Code
 - Billing, credit pool, multi-tenant accounts, BYOK key management
-- Validation survey builder, brand-guideline generator, stack auto-detection for existing repos
+- Multi-source Research fan-out (Exa, Reddit, reviews, app stores, GitHub) + validation surveys
+- PRD outline-approval gate + 4 template formats (Standard/PRFAQ/Lean/Enterprise)
+- Cross-agent `ask_agent` consultation (e.g. Design asking Research a quick fact-check)
 
 ## Risks & Assumptions
 - Risk: building Design/Code agents well enough to be convincing is a multi-week effort on its own — Now phase deliberately stubs these to avoid burning the whole budget before the core hypothesis (shared context) is tested.

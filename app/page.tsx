@@ -13,6 +13,7 @@ export default function Home() {
   const [project, setProject] = useState<ProjectContext | null>(null);
   const [active, setActive] = useState<NavStageId>("Ideate");
   const [submitting, setSubmitting] = useState(false);
+  const [answering, setAnswering] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -53,6 +54,25 @@ export default function Home() {
     setProject(null);
   }
 
+  async function handleAnswer(answer: string) {
+    if (!project || answering) return;
+    setAnswering(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answer }),
+      });
+      if (res.ok) {
+        const data: ProjectContext = await res.json();
+        setProject(data);
+        if (data.status === "running" && !pollRef.current) pollProject(data.id);
+      }
+    } finally {
+      setAnswering(false);
+    }
+  }
+
   if (!project) {
     return <HomeScreen onSubmit={handleSubmit} submitting={submitting} />;
   }
@@ -61,7 +81,7 @@ export default function Home() {
     <div className="flex h-screen flex-col">
       <TopBar project={project} active={active} onSelect={setActive} onBackHome={handleBackHome} />
       <div className="flex flex-1 overflow-hidden">
-        <ChatPanel project={project} active={active} onSelect={setActive} />
+        <ChatPanel project={project} active={active} onSelect={setActive} onAnswer={handleAnswer} answering={answering} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <ArtifactPanel project={project} active={active} />
           <div className="max-h-64 overflow-auto border-t border-border p-3">

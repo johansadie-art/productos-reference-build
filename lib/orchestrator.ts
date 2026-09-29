@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
-import { ProjectContext, ProjectType, StageName } from "./types";
-import { saveProject } from "./store";
+import { ProjectContext, ProjectType, StageName, ChatMessage, ChatKind } from "./types";
+import { saveProject, loadProject } from "./store";
 import { getMode } from "./llm";
-import { runIdeateAgent } from "./agents/ideate";
+import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./agents/ideate";
 import { runResearchAgent } from "./agents/research";
 import { runPRDAgent } from "./agents/prd";
 import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
@@ -34,6 +34,8 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     activity,
     stages,
     sharedContext: {},
+    ideateConversation: [],
+    pendingIdeateQuestions: [],
   };
 }
 
@@ -41,25 +43,106 @@ function log(project: ProjectContext, stage: StageName | "System", message: stri
   project.activity.push({ time: new Date().toISOString(), stage, message });
 }
 
+function say(project: ProjectContext, role: ChatMessage["role"], kind: ChatKind, content: string) {
+  project.ideateConversation.push({ role, kind, content, time: new Date().toISOString() });
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function collectQaPairs(conversation: ChatMessage[]): QaPair[] {
+  const pairs: QaPair[] = [];
+  for (let i = 0; i < conversation.length; i++) {
+    const q = conversation[i];
+    const a = conversation[i + 1];
+    if (q.role === "agent" && q.kind === "question" && a && a.role === "user" && a.kind === "answer") {
+      pairs.push({ question: q.content, answer: a.content });
+    }
+  }
+  return pairs;
+}
+
 /**
- * Creates a project and kicks off the pipeline asynchronously (fire-and-forget).
- * The caller (API route) returns the project id immediately; the client polls
- * GET /api/projects/[id] to watch the shared context and activity feed update
- * live. Each stage logs 3 sub-steps (start / mid / done) so the chat-style
- * left panel in the UI has a real (not fabricated) step-by-step trace to
- * render, mirroring the reference product's transcript.
+ * Creates a project and starts the Ideation conversation (fire-and-forget).
+ * Unlike the rest of the pipeline, Ideate does NOT auto-run to completion —
+ * it's a real back-and-forth (see docs/AGENTS.md: Ideation is a QUESTIONER,
+ * not a writer). The rest of the pipeline (Research → ... → Deploy) only
+ * starts once the concept is locked via submitIdeateAnswer().
  */
 export function startPipeline(idea: string, projectType: ProjectType = "web_app", startStage?: string): ProjectContext {
   const id = randomUUID();
   const project = emptyProject(id, idea, projectType, startStage);
+  project.stages.Ideate.status = "waiting";
   saveProject(project);
 
-  // Fire and forget — this is a local reference build, not a job queue.
-  runPipeline(project).catch((err) => {
+  beginIdeateConversation(project).catch((err) => {
+    console.error("[orchestrator] ideation start failed:", err);
+    project.status = "error";
+    log(project, "System", `Ideation failed to start: ${String(err)}`);
+    saveProject(project);
+  });
+
+  return project;
+}
+
+async function beginIdeateConversation(project: ProjectContext) {
+  log(project, "Ideate", "Reading your prompt…");
+  saveProject(project);
+  await sleep(300);
+
+  const questions = await generateClarifyingQuestions(project.idea);
+  const [first, ...rest] = questions;
+  project.pendingIdeateQuestions = rest;
+  say(project, "agent", "question", first);
+  log(project, "Ideate", "Sharpening the problem — waiting on your answer to lock the concept.");
+  saveProject(project);
+}
+
+/**
+ * Called each time the user answers an Ideation question. Either asks the
+ * next queued question, or — once all questions are answered — synthesizes
+ * the concept brief and kicks off the rest of the pipeline.
+ */
+export async function submitIdeateAnswer(id: string, answer: string): Promise<ProjectContext> {
+  const project = loadProject(id);
+  if (!project) throw new Error("project not found");
+  if (project.stages.Ideate.status !== "waiting") return project; // ignore stray/duplicate submits
+
+  say(project, "user", "answer", answer);
+  saveProject(project);
+
+  if (project.pendingIdeateQuestions.length > 0) {
+    const [next, ...rest] = project.pendingIdeateQuestions;
+    project.pendingIdeateQuestions = rest;
+    say(project, "agent", "question", next);
+    saveProject(project);
+    return project;
+  }
+
+  // All questions answered — lock the concept.
+  log(project, "Ideate", "Writing the concept doc…");
+  saveProject(project);
+
+  const qa = collectQaPairs(project.ideateConversation);
+  const { content, assumptions, openQuestions } = await synthesizeConceptBrief(project.idea, qa);
+
+  project.stages.Ideate = { status: "done", content };
+  project.sharedContext["ideate.output"] = content;
+  if (assumptions.length) project.sharedContext["ideate.assumptions"] = assumptions.map((a) => `- ${a}`).join("\n");
+  if (openQuestions.length)
+    project.sharedContext["ideate.openQuestions"] = openQuestions.map((q) => `- ${q}`).join("\n");
+
+  say(
+    project,
+    "agent",
+    "info",
+    "The concept's locked in. The live doc on the right has the problem, the user, and the MVP scope."
+  );
+  log(project, "Ideate", "Concept locked — wrote ideation brief to shared context.");
+  saveProject(project);
+
+  runRestOfPipeline(project, content).catch((err) => {
     console.error("[orchestrator] pipeline failed:", err);
     project.status = "error";
     log(project, "System", `Pipeline failed: ${String(err)}`);
@@ -69,22 +152,7 @@ export function startPipeline(idea: string, projectType: ProjectType = "web_app"
   return project;
 }
 
-async function runPipeline(project: ProjectContext) {
-  // --- Ideate ---
-  project.stages.Ideate.status = "running";
-  log(project, "Ideate", "Reading your prompt…");
-  saveProject(project);
-  await sleep(300);
-  log(project, "Ideate", "Sharpening the problem and target user…");
-  saveProject(project);
-  await sleep(300);
-
-  const ideateBrief = await runIdeateAgent(project.idea);
-  project.stages.Ideate = { status: "done", content: ideateBrief };
-  project.sharedContext["ideate.output"] = ideateBrief;
-  log(project, "Ideate", "Concept locked — wrote ideation brief to shared context.");
-  saveProject(project);
-
+async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   // --- Research (Discover) ---
   project.stages.Research.status = "running";
   log(project, "Research", "Reading ideation brief from shared context — scanning the market…");

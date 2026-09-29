@@ -1,36 +1,74 @@
+"use client";
+
+import { useState } from "react";
 import { ProjectContext } from "@/lib/types";
 import { NAV_STAGES, NavStageId, STAGE_UI } from "@/lib/stageUi";
 
-function messagesFor(project: ProjectContext, active: NavStageId): string[] {
+function activityFor(project: ProjectContext, active: NavStageId): string[] {
   return project.activity.filter((a) => a.stage === active).map((a) => a.message);
 }
 
+type Row = { type: "qa"; question: string; answer?: string } | { type: "info"; text: string };
+
+function buildIdeateRows(project: ProjectContext): Row[] {
+  const conv = project.ideateConversation;
+  const rows: Row[] = [];
+  for (let i = 0; i < conv.length; i++) {
+    const m = conv[i];
+    if (m.role === "agent" && m.kind === "question") {
+      const next = conv[i + 1];
+      if (next && next.role === "user" && next.kind === "answer") {
+        rows.push({ type: "qa", question: m.content, answer: next.content });
+      } else {
+        rows.push({ type: "qa", question: m.content });
+      }
+    } else if (m.role === "agent" && m.kind === "info") {
+      rows.push({ type: "info", text: m.content });
+    }
+  }
+  return rows;
+}
+
 /**
- * Left panel: chat-style trace for the active stage — mirrors the
- * reference screenshot's transcript (system step → agent intro → sub-step
- * checklist → closing summary → stage status), plus a progress footer and
- * a stubbed chat input. Content here is real (drawn from the pipeline's own
- * activity log), not fabricated copy.
+ * Left panel: mirrors the reference screenshot's transcript. For Ideate
+ * specifically, the Ideation Agent is a QUESTIONER (see docs/AGENTS.md) —
+ * this renders a real back-and-forth (checkmarked once answered, pulsing
+ * while pending) instead of a one-shot summary. Other stages remain
+ * one-shot generators in this reference build, shown as a simple trace.
  */
 export function ChatPanel({
   project,
   active,
   onSelect,
+  onAnswer,
+  answering,
 }: {
   project: ProjectContext;
   active: NavStageId;
   onSelect: (id: NavStageId) => void;
+  onAnswer: (answer: string) => void;
+  answering: boolean;
 }) {
   const ui = STAGE_UI[active];
   const stage = project.stages[active];
-  const messages = messagesFor(project, active);
-  const finished = stage.status === "done" || stage.status === "stubbed";
-  const substeps = finished ? messages.slice(0, -1) : messages;
-  const closing = finished ? messages[messages.length - 1] : null;
-
   const idx = NAV_STAGES.indexOf(active);
   const next = NAV_STAGES[idx + 1];
   const isFirstStage = idx === 0;
+  const finished = stage.status === "done" || stage.status === "stubbed";
+
+  const isIdeate = active === "Ideate";
+  const substeps = activityFor(project, active);
+  const ideateRows = isIdeate ? buildIdeateRows(project) : [];
+  const canAnswer = isIdeate && stage.status === "waiting" && !answering;
+
+  const [inputValue, setInputValue] = useState("");
+
+  function handleSend() {
+    const value = inputValue.trim();
+    if (!value || !canAnswer) return;
+    onAnswer(value);
+    setInputValue("");
+  }
 
   return (
     <aside className="flex h-full w-[380px] flex-col border-r border-border bg-panel/60">
@@ -66,15 +104,40 @@ export function ChatPanel({
               <li key={i} className="flex items-center gap-2">
                 <span className="h-1 w-1 rounded-full bg-white/30" />
                 {m}
-                {stage.status === "running" && i === substeps.length - 1 && (
-                  <span className="animate-pulse text-accent">…</span>
-                )}
               </li>
             ))}
           </ul>
         )}
 
-        {closing && <p className="text-white/60">{closing}</p>}
+        {isIdeate ? (
+          <div className="ml-1 space-y-3">
+            {ideateRows.map((r, i) =>
+              r.type === "qa" ? (
+                <div key={i} className="space-y-1">
+                  <div className="flex items-center gap-2 text-white/70">
+                    {r.answer ? (
+                      <span className="text-emerald-400">✓</span>
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                    )}
+                    <span>{r.question}</span>
+                  </div>
+                  {r.answer && <p className="ml-5 font-semibold text-white">{r.answer}</p>}
+                </div>
+              ) : (
+                <p key={i} className="text-white/60">
+                  {r.text}
+                </p>
+              )
+            )}
+            {answering && <p className="text-xs text-accent">Ideation Agent is thinking…</p>}
+          </div>
+        ) : (
+          (() => {
+            const closing = finished ? substeps[substeps.length - 1] : null;
+            return closing ? <p className="text-white/60">{closing}</p> : null;
+          })()
+        )}
 
         {finished && (
           <div className="flex items-center justify-between text-xs text-white/40">
@@ -98,12 +161,19 @@ export function ChatPanel({
           </button>
         </div>
 
-        <div className="rounded-xl border border-border bg-black/20 p-2.5">
+        <div className={`rounded-xl border p-2.5 ${canAnswer ? "border-accent/50 bg-black/30" : "border-border bg-black/20"}`}>
           <input
-            disabled
-            placeholder="Tell ProductOS what you want to build…"
-            title="Conversational refinement is a Next-phase feature — see docs/ROADMAP.md"
-            className="mb-2 w-full bg-transparent text-xs text-white/40 outline-none placeholder:text-white/30"
+            value={canAnswer ? inputValue : ""}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSend();
+            }}
+            disabled={!canAnswer}
+            placeholder={
+              canAnswer ? "Type your answer…" : answering ? "Waiting on the agent…" : "Tell ProductOS what you want to build…"
+            }
+            title={canAnswer ? undefined : "Conversational input outside Ideation is a Next-phase feature — see docs/ROADMAP.md"}
+            className="mb-2 w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30"
           />
           <div className="flex items-center justify-between text-xs text-white/25">
             <span className="flex items-center gap-2">
@@ -112,7 +182,13 @@ export function ChatPanel({
             </span>
             <span className="flex items-center gap-2">
               <span>🎙️</span>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10">↑</span>
+              <button
+                onClick={handleSend}
+                disabled={!canAnswer || !inputValue.trim()}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white/70 transition disabled:opacity-30"
+              >
+                ↑
+              </button>
             </span>
           </div>
         </div>
