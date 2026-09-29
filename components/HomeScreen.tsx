@@ -220,20 +220,20 @@ function ProjectCard({ project, onOpen }: { project: ProjectContext; onOpen: () 
       onClick={onOpen}
       className="flex flex-col rounded-xl border border-border bg-panel p-4 text-left transition hover:border-white/20 hover:bg-white/[0.04]"
     >
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium text-white/90">{project.idea}</span>
+      <div className="mb-1.5 flex items-start justify-between gap-2">
+        <span className="text-sm font-medium leading-snug text-white/90">{project.idea}</span>
         <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/40">
           {PROJECT_TYPE_LABEL[project.projectType]}
         </span>
       </div>
-      <StageDots project={project} />
       <p
-        className={`mt-2 text-xs font-medium ${
+        className={`mb-3 text-xs font-medium ${
           progress.isDone ? "text-emerald-400" : progress.isWaiting ? "text-amber-400" : "text-white/50"
         }`}
       >
         {progress.label}
       </p>
+      <StageDots project={project} />
     </button>
   );
 }
@@ -241,10 +241,10 @@ function ProjectCard({ project, onOpen }: { project: ProjectContext; onOpen: () 
 /**
  * A feature that decomposes into several PRDs (e.g. Login → Password
  * Login, Biometric Login, MFA, SSO, Forgot Password) renders as one
- * cluster card with a compact row per sub-PRD, instead of 5 separate
- * top-level cards — see the ProjectContext.subcategory doc comment for
- * why. Each row is still independently clickable and shows its own real
- * stage-dot progress.
+ * cluster card containing a small sub-card per sub-PRD, instead of 5
+ * separate top-level cards — see the ProjectContext.subcategory doc
+ * comment for why. Each sub-card is still independently clickable and
+ * shows its own full (non-truncated) name, real status, and stage dots.
  */
 function FeatureClusterCard({
   name,
@@ -260,32 +260,32 @@ function FeatureClusterCard({
   const doneCount = items.filter((p) => getProjectProgress(p).isDone).length;
   return (
     <div className="flex flex-col rounded-xl border border-border bg-panel p-4">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-medium text-white/90">{name}</span>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="text-sm font-medium text-white/90">{name}</span>
         <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/40">
           {doneCount}/{items.length} done · {items.length} PRDs
         </span>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-2">
         {items.map((p) => {
           const progress = getProjectProgress(p);
           return (
             <button
               key={p.id}
               onClick={() => onOpen(p)}
-              className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition hover:bg-white/[0.05]"
+              className="flex w-full flex-col rounded-lg border border-white/5 bg-black/20 px-3 py-2 text-left transition hover:border-white/15 hover:bg-white/[0.05]"
             >
-              <span className="min-w-0 truncate text-xs text-white/70">{p.idea}</span>
-              <span className="flex shrink-0 items-center gap-2">
+              <span className="text-xs font-medium leading-snug text-white/80">{p.idea}</span>
+              <p
+                className={`mt-1 text-[10px] font-medium ${
+                  progress.isDone ? "text-emerald-400" : progress.isWaiting ? "text-amber-400" : "text-white/40"
+                }`}
+              >
+                {progress.label}
+              </p>
+              <div className="mt-1.5">
                 <StageDots project={p} />
-                <span
-                  className={`shrink-0 whitespace-nowrap text-right text-[10px] font-medium ${
-                    progress.isDone ? "text-emerald-400" : progress.isWaiting ? "text-amber-400" : "text-white/40"
-                  }`}
-                >
-                  {progress.label}
-                </span>
-              </span>
+              </div>
             </button>
           );
         })}
