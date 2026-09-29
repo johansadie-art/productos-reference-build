@@ -57,6 +57,7 @@ export function ChatPanel({
   const finished = stage.status === "done" || stage.status === "stubbed";
 
   const isIdeate = active === "Ideate";
+  const isResearch = active === "Research";
   const substeps = activityFor(project, active);
   const ideateRows = isIdeate ? buildIdeateRows(project) : [];
   const canAnswer = isIdeate && stage.status === "waiting" && !answering;
@@ -82,9 +83,17 @@ export function ChatPanel({
 
       <div className="flex-1 space-y-4 overflow-auto px-4 py-4 text-sm">
         {!isFirstStage && (
-          <div className="flex items-center justify-between text-xs text-white/30">
-            <span>↳ get project context · Checking stage</span>
-            <span>1 step ✓</span>
+          <div className="space-y-1.5 text-xs text-white/30">
+            <div className="flex items-center justify-between">
+              <span>
+                ↳ {STAGE_UI[NAV_STAGES[idx - 1]].label} approved · Handed to {ui.agentName}
+              </span>
+              <span className="text-emerald-400">✓</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>↳ {ui.systemStepLabel}</span>
+              <span>1 step ✓</span>
+            </div>
           </div>
         )}
 
@@ -131,6 +140,27 @@ export function ChatPanel({
               )
             )}
             {answering && <p className="text-xs text-accent">Ideation Agent is thinking…</p>}
+          </div>
+        ) : isResearch ? (
+          <div className="ml-1 space-y-3">
+            {/* The Research Agent investigates itself — self-asked, self-answered
+                from its own findings, never waiting on the user (see docs/AGENTS.md). */}
+            {project.researchReasoning.map((r, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex items-center gap-2 text-white/70">
+                  <span className="text-emerald-400">✓</span>
+                  <span>{r.question}</span>
+                </div>
+                <p className="ml-5 font-semibold text-white">{r.answer}</p>
+              </div>
+            ))}
+            <button
+              disabled
+              title="Stubbed in this reference build — see docs/ROADMAP.md"
+              className="mt-1 flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-white/40"
+            >
+              📎 Upload Interviews
+            </button>
           </div>
         ) : (
           (() => {

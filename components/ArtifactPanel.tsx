@@ -1,7 +1,11 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { ProjectContext } from "@/lib/types";
 import { NavStageId, STAGE_UI } from "@/lib/stageUi";
 import { StatusPill } from "./StatusPill";
 import { MarkdownDoc } from "./MarkdownDoc";
+import { BarChart } from "./BarChart";
 
 function wordCount(text: string): number {
   return text.trim().length ? text.trim().split(/\s+/).length : 0;
@@ -72,6 +76,58 @@ function IdeateArtifacts({ project }: { project: ProjectContext }) {
 }
 
 /**
+ * Research runs four jobs in parallel and produces separate per-topic
+ * documents (write_research_run, per docs/AGENTS.md) — Market Sizing &
+ * Pricing, Competitor Landscape, Customer Preferences, Positioning &
+ * Wedge — shown as tabs, matching the reference screenshot.
+ */
+function ResearchArtifacts({ project }: { project: ProjectContext }) {
+  const topics = project.researchTopics;
+  const [activeTopicId, setActiveTopicId] = useState<string | null>(topics[0]?.id ?? null);
+
+  useEffect(() => {
+    if (topics.length && !topics.some((t) => t.id === activeTopicId)) {
+      setActiveTopicId(topics[0].id);
+    }
+  }, [topics, activeTopicId]);
+
+  if (!topics.length) {
+    return <p className="text-sm text-white/30">Waiting for this stage to run…</p>;
+  }
+
+  const active = topics.find((t) => t.id === activeTopicId) ?? topics[0];
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-1 border-b border-border pb-3">
+        {topics.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTopicId(t.id)}
+            className={`rounded-md px-2.5 py-1.5 text-xs transition ${
+              active.id === t.id ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+            }`}
+          >
+            {t.tabLabel}…
+          </button>
+        ))}
+        <button
+          disabled
+          title="Stubbed in this reference build — see docs/ROADMAP.md"
+          className="ml-auto rounded-md px-2.5 py-1.5 text-xs text-white/25"
+        >
+          + Manual Research
+        </button>
+      </div>
+
+      <p className="mb-3 text-xs text-white/30">{active.docTitle}</p>
+      <MarkdownDoc content={active.content} />
+      {active.chart && <BarChart caption={active.chart.caption} bars={active.chart.bars} />}
+    </div>
+  );
+}
+
+/**
  * Right panel: the live artifact/document for the active stage — mirrors
  * the "Ideation brief — Live concept doc" panel in the reference
  * screenshots (header + rendered doc + word/char count footer).
@@ -100,6 +156,8 @@ export function ArtifactPanel({ project, active }: { project: ProjectContext; ac
       <div className="flex-1 overflow-auto px-6 py-5">
         {active === "Ideate" ? (
           <IdeateArtifacts project={project} />
+        ) : active === "Research" ? (
+          <ResearchArtifacts project={project} />
         ) : content ? (
           <MarkdownDoc content={content} />
         ) : (

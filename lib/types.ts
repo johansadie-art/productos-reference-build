@@ -25,6 +25,31 @@ export interface ChatMessage {
   kind: ChatKind;
 }
 
+/** A single agent-asked, agent-answered investigative question (not a user prompt). */
+export interface ReasoningPair {
+  question: string;
+  answer: string;
+}
+
+export interface ChartBar {
+  label: string;
+  value: number; // 0-100
+  highlight?: boolean;
+}
+
+/**
+ * Research runs multiple per-topic investigations in parallel (see
+ * docs/AGENTS.md: write_research_run), not one blob — Market Sizing &
+ * Pricing, Competitor Landscape, Customer Preferences, Positioning & Wedge.
+ */
+export interface ResearchTopic {
+  id: string;
+  tabLabel: string;
+  docTitle: string;
+  content: string;
+  chart?: { caption: string; bars: ChartBar[] };
+}
+
 export interface ProjectContext {
   id: string;
   idea: string;
@@ -41,4 +66,8 @@ export interface ProjectContext {
   // writer — it holds a real back-and-forth before locking the concept brief.
   ideateConversation: ChatMessage[];
   pendingIdeateQuestions: string[];
+  // The Research Agent investigates itself rather than asking the user —
+  // these are its own questions-to-itself, answered from its findings.
+  researchReasoning: ReasoningPair[];
+  researchTopics: ResearchTopic[];
 }

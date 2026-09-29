@@ -7,7 +7,7 @@ grows past the Now-phase scope in `docs/ROADMAP.md`. **Build status** reflects t
 | # | Agent | Role (one line) | Reads | Produces | Build status |
 |---|---|---|---|---|---|
 | 1 | **Ideation** | QUESTIONER — draws the concept out of the user, doesn't invent it | Raw idea, prior concept brief, project wiki | Concept brief (problem, target user, assumptions) + open-questions log for Research | **Real** — conversational, mock+live (see below) |
-| 2 | **Research** | INVESTIGATOR — grounds every claim in a clickable source | Ideation brief, a research task, workspace customer signals | Sourced findings, competitor registry, per-topic docs, rolling brief, survey links | **Partial** — one-shot generation, mock+live; no multi-source fan-out, no surveys |
+| 2 | **Research** | INVESTIGATOR — grounds every claim in a clickable source | Ideation brief, a research task, workspace customer signals | Sourced findings, competitor registry, per-topic docs, rolling brief, survey links | **Partial** — 4 parallel per-topic docs (`write_research_run` shape) + self-directed reasoning trace, mock+live; no real multi-source fan-out (Exa/Reddit/app-store search), no surveys |
 | 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | PRD sections, executive summary, 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — one-shot single-template generation, mock+live; no outline gate, no template choice |
 | 4 | **Architect** | Optional technical deep-dive in Define: system/DB/API/deploy/security architecture, ADRs, cost estimates | PRD sections, locked constraints, tech-stack facts | 8 architecture sections, ADRs, infra cost estimates | Not built (Later) |
 | 5 | **Design** | Turns concept+research+PRD into user flows and UI screen specs | Concept, research, PRD, locked brand direction | User-flow diagrams, UI screen specs, design docs/reports | Stubbed (Next) |
@@ -39,6 +39,11 @@ reference screenshot; live: LLM-generated) before synthesizing the concept brief
 open-questions into the shared context (`ideate.assumptions`, `ideate.openQuestions`) — a simplified stand-in
 for the real `log_assumption`/`log_open_question` tools.
 
-Research, PRD, and the rest remain one-shot generators (no `ask_agent` cross-consultation, no outline-approval
-gate, no sandboxed code execution, no headless browser, no real deploy). That gap is intentional — see
-`docs/ROADMAP.md` for phasing — not an oversight.
+Research now runs as four parallel per-topic jobs (Market Sizing & Pricing, Competitor Landscape, Customer
+Preferences, Positioning & Wedge) plus a two-question self-directed reasoning trace (the agent asking and
+answering its own investigative questions before writing anything — distinct from the user-facing Q&A in
+Ideate), matching the `write_research_run` shape in the row above. It's still **Partial**: findings are
+illustrative/mock or single-pass live-LLM reasoning, not real multi-source search (Exa/Reddit/app-store/GitHub),
+and there's no survey generation. PRD and the rest remain one-shot generators (no `ask_agent` cross-consultation,
+no outline-approval gate, no sandboxed code execution, no headless browser, no real deploy). That gap is
+intentional — see `docs/ROADMAP.md` for phasing — not an oversight.

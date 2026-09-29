@@ -3,7 +3,7 @@ import { ProjectContext, ProjectType, StageName, ChatMessage, ChatKind } from ".
 import { saveProject, loadProject } from "./store";
 import { getMode } from "./llm";
 import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./agents/ideate";
-import { runResearchAgent } from "./agents/research";
+import { runResearchReasoning, runResearchTopics } from "./agents/research";
 import { runPRDAgent } from "./agents/prd";
 import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
 
@@ -36,6 +36,8 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     sharedContext: {},
     ideateConversation: [],
     pendingIdeateQuestions: [],
+    researchReasoning: [],
+    researchTopics: [],
   };
 }
 
@@ -154,18 +156,32 @@ export async function submitIdeateAnswer(id: string, answer: string): Promise<Pr
 
 async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   // --- Research (Discover) ---
+  // Per docs/AGENTS.md: the Research Agent validates the concept against
+  // the market before committing to requirements, running four research
+  // jobs in parallel and grounding claims in sources — not one blob.
   project.stages.Research.status = "running";
-  log(project, "Research", "Reading ideation brief from shared context — scanning the market…");
+  log(project, "Research", "Scanning the market…");
   saveProject(project);
   await sleep(300);
-  log(project, "Research", "Profiling competitors and sizing the opportunity…");
+  log(project, "Research", "Profiling competitors…");
+  saveProject(project);
+  await sleep(300);
+  log(project, "Research", "Testing the riskiest assumption…");
   saveProject(project);
   await sleep(300);
 
-  const research = await runResearchAgent(project.idea, ideateBrief);
-  project.stages.Research = { status: "done", content: research };
-  project.sharedContext["research.output"] = research;
-  log(project, "Research", "Market scan complete — wrote findings to shared context.");
+  project.researchReasoning = await runResearchReasoning(project.idea, ideateBrief);
+  const topics = await runResearchTopics(project.idea, ideateBrief);
+  project.researchTopics = topics;
+
+  const combined = topics.map((t) => `# ${t.tabLabel}\n\n${t.content}`).join("\n\n---\n\n");
+  project.stages.Research = { status: "done", content: combined };
+  project.sharedContext["research.output"] = combined;
+  topics.forEach((t) => {
+    project.sharedContext[`research.${t.id}`] = t.content;
+  });
+
+  log(project, "Research", "Research is complete and strong. Findings and sources are in the docs on the right.");
   saveProject(project);
 
   // --- PRD (Define) ---
@@ -177,7 +193,7 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   saveProject(project);
   await sleep(300);
 
-  const prd = await runPRDAgent(project.idea, research);
+  const prd = await runPRDAgent(project.idea, combined);
   project.stages.PRD = { status: "done", content: prd };
   project.sharedContext["prd.output"] = prd;
   log(project, "PRD", "PRD drafted — wrote spec to shared context.");
