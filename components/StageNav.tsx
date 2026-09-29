@@ -64,7 +64,7 @@ export function StageNav({
   onSelect: (id: NavStageId) => void;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-3">
+    <div className="flex items-center justify-center gap-3 py-2.5">
       {NAV_STAGES.map((id) => {
         const ui = STAGE_UI[id];
         const status = project.stages[id].status;
@@ -75,14 +75,25 @@ export function StageNav({
             key={id}
             onClick={() => onSelect(id)}
             title={`${ui.label} — ${ui.sublabel}`}
-            className={`relative flex h-9 w-9 items-center justify-center rounded-lg border transition ${
-              isActive
-                ? "border-accent/60 bg-accent/15 text-accent"
-                : "border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08]"
-            } ${reached ? "" : "opacity-30"}`}
+            className={`group flex flex-col items-center gap-1 ${reached ? "" : "opacity-30"}`}
           >
-            <StageIcon id={id} />
-            <StageBadge status={status} />
+            <span
+              className={`relative flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+                isActive
+                  ? "border-accent/60 bg-accent/15 text-accent"
+                  : "border-white/10 bg-white/[0.04] text-white/70 group-hover:bg-white/[0.08]"
+              }`}
+            >
+              <StageIcon id={id} />
+              <StageBadge status={status} />
+            </span>
+            <span
+              className={`text-[10px] font-medium leading-none tracking-wide ${
+                isActive ? "text-accent" : "text-white/50"
+              }`}
+            >
+              {ui.label}
+            </span>
           </button>
         );
       })}
