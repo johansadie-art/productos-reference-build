@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ProjectContext, ProjectType } from "@/lib/types";
 import { NavStageId } from "@/lib/stageUi";
+import { getProjectProgress } from "@/lib/projectProgress";
 import { HomeScreen } from "@/components/HomeScreen";
 import { TopBar } from "@/components/TopBar";
 import { ChatPanel } from "@/components/ChatPanel";
@@ -15,6 +16,9 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [answering, setAnswering] = useState(false);
   const [runningArchitecture, setRunningArchitecture] = useState(false);
+  // Bumped whenever we go back to the dashboard, so HomeScreen refetches
+  // the project list (e.g. after creating a new feature or finishing a run).
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -36,12 +40,12 @@ export default function Home() {
     }, 900);
   }
 
-  async function handleSubmit(idea: string, projectType: ProjectType, startStage: NavStageId) {
+  async function handleSubmit(idea: string, projectType: ProjectType, startStage: NavStageId, category?: string) {
     setSubmitting(true);
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idea, projectType, startStage }),
+      body: JSON.stringify({ idea, projectType, startStage, category }),
     });
     const data: ProjectContext = await res.json();
     setProject(data);
@@ -50,9 +54,18 @@ export default function Home() {
     pollProject(data.id);
   }
 
+  // Opening a project from the dashboard should land on wherever the work
+  // currently is (the furthest-along stage), not always back at Ideate.
+  function handleOpenProject(p: ProjectContext) {
+    setProject(p);
+    setActive(getProjectProgress(p).currentStage);
+    if (p.status === "running") pollProject(p.id);
+  }
+
   function handleBackHome() {
     if (pollRef.current) clearInterval(pollRef.current);
     setProject(null);
+    setDashboardRefreshKey((k) => k + 1);
   }
 
   async function handleAnswer(answer: string) {
@@ -89,7 +102,14 @@ export default function Home() {
   }
 
   if (!project) {
-    return <HomeScreen onSubmit={handleSubmit} submitting={submitting} />;
+    return (
+      <HomeScreen
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        onOpenProject={handleOpenProject}
+        refreshKey={dashboardRefreshKey}
+      />
+    );
   }
 
   return (

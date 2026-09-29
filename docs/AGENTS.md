@@ -97,3 +97,13 @@ app code (that remains the stubbed Fullstack Builder).
 
 Code and Deploy remain fully stubbed (no sandboxed code execution, no headless browser, no real deploy). That
 gap is intentional — see `docs/ROADMAP.md` for phasing — not an oversight.
+
+Separately (an app-level UX change, not tied to one of the agents above): the home screen is now a portfolio
+dashboard rather than a single idea box, per the user's explicit request (2026-09-29) to land on multiple
+features in progress, using a fake banking app as the example. `lib/store.ts` already supported many projects
+by id — what was missing was a place to see them. `lib/seed.ts` auto-seeds an example portfolio (Accounts,
+Payments & Transfers, Cards & Loans, and the universal Core Flows — Login, Onboarding) the first time there
+are no projects, by calling the same real agent functions above (no hand-written fake JSON), each stopped at a
+different real pipeline stage so the dashboard shows genuinely varied statuses (waiting on an answer, Ideate-
+only, Research-only, PRD-only, Design-only, fully complete) — see `lib/projectProgress.ts` for how a project's
+status badge is derived.

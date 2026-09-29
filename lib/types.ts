@@ -187,6 +187,11 @@ export interface ProjectContext {
   id: string;
   idea: string;
   projectType: ProjectType;
+  // Dashboard grouping only (e.g. "Accounts", "Payments & Transfers", "Core
+  // Flows") — lets the home screen show a portfolio of many features in
+  // progress, not just one idea at a time. Optional; ungrouped projects
+  // fall under "Other" in the UI. See lib/seed.ts for example data.
+  category?: string;
   createdAt: string;
   status: "running" | "done" | "error";
   mode: "mock" | "live";

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { startPipeline } from "@/lib/orchestrator";
 import { listProjects } from "@/lib/store";
+import { ensureDemoSeed } from "@/lib/seed";
 import { ProjectType } from "@/lib/types";
 
 const VALID_TYPES: ProjectType[] = ["website", "web_app", "mobile_app"];
@@ -13,10 +14,15 @@ export async function POST(req: NextRequest) {
   }
   const projectType: ProjectType = VALID_TYPES.includes(body.projectType) ? body.projectType : "web_app";
   const startStage = typeof body.startStage === "string" ? body.startStage : undefined;
-  const project = startPipeline(idea, projectType, startStage);
+  const category = typeof body.category === "string" && body.category.trim() ? body.category.trim() : undefined;
+  const project = startPipeline(idea, projectType, startStage, category);
   return NextResponse.json(project);
 }
 
+// The home screen is a portfolio dashboard (see docs/PRD.md), not a single
+// idea box — auto-seed a fake-banking-app example portfolio the first time
+// there are no projects yet, so the dashboard is never empty on first run.
 export async function GET() {
+  await ensureDemoSeed();
   return NextResponse.json(listProjects());
 }

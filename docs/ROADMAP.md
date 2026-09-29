@@ -24,7 +24,8 @@
 
 ## Now (this build)
 - **Theme**: Prove the shared-context pipeline mechanic
-  - Orchestrator + Project Context store (file/SQLite-backed, single project)
+  - Orchestrator + Project Context store (file/SQLite-backed, multi-project — the store always supported many projects by id; what was missing was a dashboard to show them, now built)
+  - Portfolio dashboard home screen: many features grouped by category, each with a real pipeline-progress status; auto-seeded with an example fake-banking-app portfolio (Accounts/Payments & Transfers/Cards & Loans/Core Flows) so it's never empty on first run — see `lib/seed.ts`
   - Research agent — mock-mode by default, pluggable to a real LLM call
   - PRD agent — mock-mode by default, pluggable to a real LLM call, reads Research output from context
   - Design agent — Brand Guidelines, 3 User Flows, and UI Screen specs for every screen those flows name, all mock+live
@@ -38,7 +39,7 @@
 - **Theme**: Real design + code generation
   - Design Builder: the Fullstack Builder's live sandbox page-building tool — actually render/build the UI Screens as running code, not just specs
   - Code agent: generate an actual runnable Next.js scaffold from PRD + Design (not just a plan)
-  - Multi-project support + minimal auth (single workspace, real accounts optional)
+  - Minimal auth (single workspace, real accounts optional) — multi-project support itself is done, see Now
   - Multi-provider research fan-out (SerpAPI/Exa/Perplexity) if single-provider research proves the concept
 
 ## Later (backlog / parked)

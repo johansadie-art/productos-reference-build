@@ -42,6 +42,7 @@ ProductOS is an "AI-native product development platform": one prompt goes in, an
 
 ## 5. User Experience
 - **Key use cases**:
+  0. User lands on a portfolio dashboard showing multiple features already in progress (grouped by category, each with a real status badge for how far it's gotten) — not a single empty idea box — then opens one or starts a new one.
   1. User types one idea prompt → sees Research → PRD → Design → Code → Deploy stages execute in sequence with live status (mirrors the "night shift" timeline on the source site).
   2. User opens the shared "Project Context" panel and sees exactly what each agent read and wrote — this is the feature being validated.
   3. User inspects/downloads generated artifacts per stage (research brief, PRD doc, screen list, code file tree, deploy status).
@@ -51,7 +52,10 @@ ProductOS is an "AI-native product development platform": one prompt goes in, an
 ## 6. Scope
 
 ### In scope — Now (this build)
-- Orchestrator + shared "Project Context" store (single project at a time, file/SQLite-backed).
+- Orchestrator + shared "Project Context" store (multi-project, file/SQLite-backed — see below).
+- Portfolio dashboard home screen: many features in progress at once, grouped by category, each with a real
+  pipeline-progress status — not a single idea box. Auto-seeded with an example fake-banking-app portfolio
+  (Accounts, Payments & Transfers, Cards & Loans, Core Flows/Login+Onboarding) so it's never empty on first run.
 - **Research agent**: real or mocked market-scan output (competitors, positioning, sourced bullet points).
 - **PRD agent**: generates a structured PRD (press release, goals/metrics, personas, FAQs) from idea + research context.
 - Pipeline UI: idea input, live stage timeline/activity feed, per-stage artifact viewer, shared context inspector.
@@ -60,7 +64,6 @@ ProductOS is an "AI-native product development platform": one prompt goes in, an
 ### In scope — Next
 - **Design agent**: real UX flow + screen list generation (text/structured, then simple wireframe rendering).
 - **Code agent**: generate an actual runnable Next.js scaffold from the PRD + design (not just a file-tree plan).
-- Persisted multi-project support (more than one idea/project).
 - Basic auth (single-user is fine for internal reference; real accounts later).
 
 ### In scope — Later (explicitly out of scope for this build)

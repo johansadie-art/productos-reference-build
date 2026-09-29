@@ -14,7 +14,7 @@ import { stubCode, stubDeploy } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
 
-function emptyProject(id: string, idea: string, projectType: ProjectType, startStage?: string): ProjectContext {
+export function emptyProject(id: string, idea: string, projectType: ProjectType, startStage?: string, category?: string): ProjectContext {
   const stages = STAGE_ORDER.reduce(
     (acc, s) => ({ ...acc, [s]: { status: "pending" as const, content: "" } }),
     {} as ProjectContext["stages"]
@@ -33,6 +33,7 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     id,
     idea,
     projectType,
+    category,
     createdAt: new Date().toISOString(),
     status: "running",
     mode: getMode(),
@@ -92,9 +93,14 @@ function collectQaPairs(conversation: ChatMessage[]): QaPair[] {
  * not a writer). The rest of the pipeline (Research → ... → Deploy) only
  * starts once the concept is locked via submitIdeateAnswer().
  */
-export function startPipeline(idea: string, projectType: ProjectType = "web_app", startStage?: string): ProjectContext {
+export function startPipeline(
+  idea: string,
+  projectType: ProjectType = "web_app",
+  startStage?: string,
+  category?: string
+): ProjectContext {
   const id = randomUUID();
-  const project = emptyProject(id, idea, projectType, startStage);
+  const project = emptyProject(id, idea, projectType, startStage, category);
   project.stages.Ideate.status = "waiting";
   saveProject(project);
 
