@@ -6,6 +6,8 @@ import { generateClarifyingQuestions, synthesizeConceptBrief, QaPair } from "./a
 import { runResearchReasoning, runResearchTopics } from "./agents/research";
 import { runPRDReasoning, proposePRDOutline, writePRDSections, countFlaggedAssumptions } from "./agents/prd";
 import { generateBrandGuidelines, buildDesignReasoning, renderBrandGuidelinesMarkdown } from "./agents/design";
+import { generateConstraints, renderTechStackMarkdown, renderProjectConstraintsMarkdown } from "./agents/constraints";
+import { generateArchitecture, renderArchitectureMarkdown } from "./agents/architect";
 import { stubCode, stubDeploy } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Ideate", "Research", "PRD", "Design", "Code", "Deploy"];
@@ -46,6 +48,11 @@ function emptyProject(id: string, idea: string, projectType: ProjectType, startS
     designReasoning: [],
     brandGuidelines: null,
     designClosingSummary: "",
+    constraints: null,
+    architectureStatus: "not_started",
+    architectureSections: [],
+    architectureDecisions: [],
+    infraCostEstimate: null,
   };
 }
 
@@ -163,6 +170,22 @@ export async function submitIdeateAnswer(id: string, answer: string): Promise<Pr
 }
 
 async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
+  // --- Locked Constraints (read by PRD + Architect via load_constraints) ---
+  // Per docs/AGENTS.md: both agents share a "load_constraints" tool reading
+  // structured project constraints + locked tech-stack facts. This
+  // reference build has no project-setup intake UI, so they're generated
+  // once here (mock+live), grounded in the idea + project type, and never
+  // re-asked afterward — "locked" in the sense both agents read the same
+  // values, not that a human filled out a form.
+  log(project, "System", "Locking project constraints — tech-stack facts + structured constraints…");
+  saveProject(project);
+  const constraints = await generateConstraints(project.idea, ideateBrief, project.projectType);
+  project.constraints = constraints;
+  project.sharedContext["constraints.techStack"] = renderTechStackMarkdown(constraints);
+  project.sharedContext["constraints.projectConstraints"] = renderProjectConstraintsMarkdown(constraints);
+  log(project, "System", "Constraints locked — wrote tech-stack facts + project constraints to shared context.");
+  saveProject(project);
+
   // --- Research (Discover) ---
   // Per docs/AGENTS.md: the Research Agent validates the concept against
   // the market before committing to requirements, running four research
@@ -233,6 +256,50 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
   saveProject(project);
 
   await runFinalStubs(project);
+}
+
+/**
+ * The Architect Agent is the OPTIONAL technical deep-dive inside Define
+ * (see docs/AGENTS.md) — triggered on demand from the Architecture tab,
+ * unlike Research/PRD/Design which auto-run. Requires the PRD to be done
+ * (it reads PRD sections) and reads the constraints already locked earlier
+ * in the pipeline.
+ */
+export async function runArchitectureDeepDive(id: string): Promise<ProjectContext> {
+  const project = loadProject(id);
+  if (!project) throw new Error("project not found");
+  if (project.stages.PRD.status !== "done") {
+    throw new Error("The PRD must be done before running the Architecture deep-dive");
+  }
+  if (project.architectureStatus === "running" || project.architectureStatus === "done") return project;
+
+  project.architectureStatus = "running";
+  log(project, "PRD", "Architect Agent: loading locked constraints…");
+  saveProject(project);
+  await sleep(300);
+  log(project, "PRD", "Architect Agent: writing architecture sections…");
+  saveProject(project);
+
+  const constraints =
+    project.constraints ?? (await generateConstraints(project.idea, project.sharedContext["ideate.output"] ?? "", project.projectType));
+  project.constraints = constraints;
+
+  const prd = project.sharedContext["prd.output"] ?? "";
+  const { sections, decisions, cost } = await generateArchitecture(project.idea, prd, constraints);
+
+  await sleep(300);
+  log(project, "PRD", "Architect Agent: recording decisions and estimating infrastructure cost…");
+  saveProject(project);
+
+  project.architectureSections = sections;
+  project.architectureDecisions = decisions;
+  project.infraCostEstimate = cost;
+  project.architectureStatus = "done";
+  project.sharedContext["architecture.output"] = renderArchitectureMarkdown(sections, decisions, cost);
+  log(project, "PRD", `Architect Agent: done — ${sections.length} sections, ${decisions.length} ADRs, cost estimated.`);
+  saveProject(project);
+
+  return project;
 }
 
 async function runFinalStubs(project: ProjectContext) {

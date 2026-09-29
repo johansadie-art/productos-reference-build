@@ -14,6 +14,7 @@ export default function Home() {
   const [active, setActive] = useState<NavStageId>("Ideate");
   const [submitting, setSubmitting] = useState(false);
   const [answering, setAnswering] = useState(false);
+  const [runningArchitecture, setRunningArchitecture] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,20 @@ export default function Home() {
     }
   }
 
+  async function handleRunArchitecture() {
+    if (!project || runningArchitecture) return;
+    setRunningArchitecture(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}/architecture`, { method: "POST" });
+      if (res.ok) {
+        const data: ProjectContext = await res.json();
+        setProject(data);
+      }
+    } finally {
+      setRunningArchitecture(false);
+    }
+  }
+
   if (!project) {
     return <HomeScreen onSubmit={handleSubmit} submitting={submitting} />;
   }
@@ -83,7 +98,12 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         <ChatPanel project={project} active={active} onSelect={setActive} onAnswer={handleAnswer} answering={answering} />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <ArtifactPanel project={project} active={active} />
+          <ArtifactPanel
+            project={project}
+            active={active}
+            onRunArchitecture={handleRunArchitecture}
+            runningArchitecture={runningArchitecture}
+          />
           <div className="max-h-64 overflow-auto border-t border-border p-3">
             <ContextInspector project={project} />
           </div>

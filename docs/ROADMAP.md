@@ -28,6 +28,8 @@
   - Research agent — mock-mode by default, pluggable to a real LLM call
   - PRD agent — mock-mode by default, pluggable to a real LLM call, reads Research output from context
   - Design agent — Brand Guidelines real (personality + 4-color palette + typography + voice, mock+live); Design System/User Flows/UI Screens/Design Builder + Code/Deploy stages visible in the pipeline UI as **stubbed stages** (clearly labeled), so the full pipeline shape is visible even though only some stages are real
+  - Locked constraints (tech-stack facts + structured project constraints) — mock+live, generated once early in the pipeline, read by both PRD and Architect via `load_constraints`
+  - Architect agent — the real, genuinely **optional** deep-dive: 8 architecture sections + 3 ADRs + an infra cost estimate, mock+live, triggered on demand from the Architecture tab (not auto-run, unlike the rest of the pipeline)
   - Pipeline UI: idea input, live activity timeline (matches source site's "night shift" log), per-stage artifact viewer, raw Project Context inspector
 
 ## Next
@@ -43,7 +45,6 @@
 See `docs/AGENTS.md` for the full real-agent roster (roles, reads/produces, tool surface) this backlog is
 scoped against.
 
-- **Architect Agent** — 8 architecture sections (system overview, containers, DB/API, deploy, security, patterns, risks), ADRs, infra cost estimates
 - **Design System Agent** — production-ready tokens/component system, DESIGN.md, live dark/light HTML previews
 - **Fullstack Builder** — real sandboxed coding agent (not a stub) implementing from design tokens + PRD
 - **Code Review Agent** — full-codebase security/performance/architecture review with health scores

@@ -79,6 +79,61 @@ export interface BrandGuidelines {
   voice: string;
 }
 
+/** One locked tech-stack fact — read by PRD's and Architect's shared `load_constraints` tool. */
+export interface TechStackFact {
+  area: string; // "Frontend" | "Backend / API" | "Database" | "Hosting" | "Auth"
+  choice: string;
+  reason: string;
+}
+
+/** One structured project constraint — same `load_constraints` surface as tech-stack facts. */
+export interface ProjectConstraint {
+  label: string; // "Team size" | "Timeline" | "Budget sensitivity" | "Compliance"
+  value: string;
+}
+
+/**
+ * "Locked constraints" per docs/AGENTS.md: structured project constraints +
+ * locked tech-stack facts, read by both the PRD Agent and the Architect
+ * Agent via their shared `load_constraints` tool. In the real product these
+ * would come from a project-setup intake; this reference build has none, so
+ * they're generated once, early in the pipeline (mock+live) — see
+ * lib/agents/constraints.ts — and never re-asked afterward.
+ */
+export interface ProjectConstraints {
+  techStack: TechStackFact[];
+  constraints: ProjectConstraint[];
+}
+
+/** One of the Architect Agent's 8 architecture sections (`write_architecture_section`). */
+export interface ArchitectureSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
+/** One architecture decision record (`record_architecture_decision`). */
+export interface ArchitectureDecision {
+  id: string;
+  title: string;
+  context: string;
+  decision: string;
+  consequences: string;
+}
+
+/** One line item in the Architect Agent's infra cost projection (`estimate_infrastructure_cost`). */
+export interface CostLineItem {
+  service: string;
+  estimate: string;
+  reason: string;
+}
+
+export interface InfrastructureCostEstimate {
+  lineItems: CostLineItem[];
+  totalRange: string;
+  notes: string;
+}
+
 export interface ProjectContext {
   id: string;
   idea: string;
@@ -111,4 +166,15 @@ export interface ProjectContext {
   designReasoning: ReasoningPair[];
   brandGuidelines: BrandGuidelines | null;
   designClosingSummary: string;
+  // Locked constraints (see ProjectConstraints) — read by PRD's and the
+  // Architect's shared load_constraints tool. Generated once, early.
+  constraints: ProjectConstraints | null;
+  // The Architect Agent is OPTIONAL (see docs/AGENTS.md) — triggered on
+  // demand from the Architecture tab, unlike Research/PRD/Design which
+  // auto-run. "not_started" until the user clicks "Run Architecture
+  // Deep-Dive"; requires PRD to be done first.
+  architectureStatus: "not_started" | "running" | "done";
+  architectureSections: ArchitectureSection[];
+  architectureDecisions: ArchitectureDecision[];
+  infraCostEstimate: InfrastructureCostEstimate | null;
 }
