@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { ProjectContext, StageName } from "./types";
+import { ProjectContext, ProjectType, StageName } from "./types";
 import { saveProject } from "./store";
 import { getMode } from "./llm";
 import { runResearchAgent } from "./agents/research";
@@ -8,18 +8,29 @@ import { stubCode, stubDeploy, stubDesign } from "./agents/stubs";
 
 const STAGE_ORDER: StageName[] = ["Research", "PRD", "Design", "Code", "Deploy"];
 
-function emptyProject(id: string, idea: string): ProjectContext {
+function emptyProject(id: string, idea: string, projectType: ProjectType, startStage?: string): ProjectContext {
   const stages = STAGE_ORDER.reduce(
     (acc, s) => ({ ...acc, [s]: { status: "pending" as const, content: "" } }),
     {} as ProjectContext["stages"]
   );
+  const activity = [
+    { time: new Date().toISOString(), stage: "System" as const, message: `Project created for idea: "${idea}"` },
+  ];
+  if (startStage && startStage !== "Ideate" && startStage !== "Research") {
+    activity.push({
+      time: new Date().toISOString(),
+      stage: "System",
+      message: `Requested start stage "${startStage}" isn't runnable without upstream artifacts in this reference build — starting at Discover (Research) instead.`,
+    });
+  }
   return {
     id,
     idea,
+    projectType,
     createdAt: new Date().toISOString(),
     status: "running",
     mode: getMode(),
-    activity: [{ time: new Date().toISOString(), stage: "System", message: `Project created for idea: "${idea}"` }],
+    activity,
     stages,
     sharedContext: {},
   };
@@ -39,9 +50,9 @@ function sleep(ms: number) {
  * GET /api/projects/[id] to watch the shared context and activity feed update
  * live, mirroring the "night shift" timeline on the source product.
  */
-export function startPipeline(idea: string): ProjectContext {
+export function startPipeline(idea: string, projectType: ProjectType = "web_app", startStage?: string): ProjectContext {
   const id = randomUUID();
-  const project = emptyProject(id, idea);
+  const project = emptyProject(id, idea, projectType, startStage);
   saveProject(project);
 
   // Fire and forget — this is a local reference build, not a job queue.

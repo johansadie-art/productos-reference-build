@@ -2,6 +2,8 @@ export type StageName = "Research" | "PRD" | "Design" | "Code" | "Deploy";
 
 export type StageStatus = "pending" | "running" | "done" | "stubbed" | "error";
 
+export type ProjectType = "website" | "web_app" | "mobile_app";
+
 export interface ActivityEntry {
   time: string; // ISO timestamp
   stage: StageName | "System";
@@ -16,6 +18,7 @@ export interface StageResult {
 export interface ProjectContext {
   id: string;
   idea: string;
+  projectType: ProjectType;
   createdAt: string;
   status: "running" | "done" | "error";
   mode: "mock" | "live";
