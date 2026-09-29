@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProjectContext, ProjectType } from "@/lib/types";
 import { NAV_STAGES, NavStageId, PROJECT_TYPE_LABEL, STAGE_UI } from "@/lib/stageUi";
 import { getProjectProgress, PROGRESS_STAGES } from "@/lib/projectProgress";
@@ -21,6 +21,61 @@ type SubmitFn = (
 ) => void;
 
 /**
+ * A text input with a dropdown of existing values underneath (e.g. every
+ * category/feature name already used on the dashboard) — pick one to
+ * avoid near-duplicate names ("Accounts" vs "Account"), or just keep
+ * typing to create a genuinely new one. Options narrow as you type.
+ */
+function ComboField({
+  value,
+  onChange,
+  options,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const matches = options.filter((o) => o.toLowerCase().includes(value.trim().toLowerCase()));
+
+  return (
+    <div className={`relative ${className ?? ""}`}>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 100)}
+        placeholder={placeholder}
+        className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-white/25"
+      />
+      {open && matches.length > 0 && (
+        <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-auto rounded-lg border border-border bg-panel py-1 shadow-xl">
+          {matches.map((o) => (
+            <button
+              key={o}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                onChange(o);
+                setOpen(false);
+              }}
+              className="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs text-white/70 hover:bg-white/10"
+            >
+              <span className="truncate">{o}</span>
+              {value === o && <span className="shrink-0">✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * The "new feature" form — what used to be the entire home screen before
  * this became a portfolio dashboard (see the "land on multiple features"
  * request, 2026-09-29). Always visible at the top of the dashboard (not
@@ -35,10 +90,16 @@ function NewProjectForm({
   onSubmit,
   submitting,
   initial,
+  categories,
+  subcategoriesByCategory,
 }: {
   onSubmit: SubmitFn;
   submitting: boolean;
   initial?: { category?: string; subcategory?: string };
+  /** Every distinct category already used on the dashboard, for the Category dropdown. */
+  categories: string[];
+  /** Every distinct feature already used, grouped by its category, for the Feature dropdown. */
+  subcategoriesByCategory: Record<string, string[]>;
 }) {
   const [idea, setIdea] = useState("");
   const [category, setCategory] = useState(initial?.category ?? "");
@@ -57,6 +118,15 @@ function NewProjectForm({
     setSubcategory("");
   }
 
+  // Feature options narrow to the selected category once one's picked
+  // (e.g. picking "Core Flows" only offers "Login"); with no category
+  // chosen yet, offer every feature name that exists anywhere, since
+  // typing the category after the feature is a perfectly normal order too.
+  const trimmedCategory = category.trim();
+  const subcategoryOptions = trimmedCategory
+    ? subcategoriesByCategory[trimmedCategory] ?? []
+    : Array.from(new Set(Object.values(subcategoriesByCategory).flat())).sort();
+
   return (
     <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-border bg-panel p-4 text-left">
       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-white/40">New feature</p>
@@ -69,17 +139,19 @@ function NewProjectForm({
       />
 
       <div className="mt-2 flex gap-2">
-        <input
+        <ComboField
+          className="w-1/2"
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
+          onChange={setCategory}
+          options={categories}
           placeholder="Category (optional, e.g. Accounts) — groups it on the dashboard"
-          className="w-1/2 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-white/25"
         />
-        <input
+        <ComboField
+          className="w-1/2"
           value={subcategory}
-          onChange={(e) => setSubcategory(e.target.value)}
+          onChange={setSubcategory}
+          options={subcategoryOptions}
           placeholder="Feature (optional, e.g. Login) — clusters multiple PRDs under one feature"
-          className="w-1/2 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-xs outline-none placeholder:text-white/25"
         />
       </div>
 
@@ -380,6 +452,29 @@ export function HomeScreen({
 
   const groups = projects ? groupByCategory(projects) : [];
 
+  // Existing category/feature names, for the form's dropdowns — see
+  // ComboField. Recomputed whenever the project list changes.
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    (projects ?? []).forEach((p) => {
+      if (p.category?.trim()) set.add(p.category.trim());
+    });
+    return Array.from(set).sort();
+  }, [projects]);
+
+  const subcategoriesByCategory = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    (projects ?? []).forEach((p) => {
+      const cat = p.category?.trim();
+      const sub = p.subcategory?.trim();
+      if (!cat || !sub) return;
+      if (!map[cat]) map[cat] = [];
+      if (!map[cat].includes(sub)) map[cat].push(sub);
+    });
+    Object.values(map).forEach((arr) => arr.sort());
+    return map;
+  }, [projects]);
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-8">
@@ -391,7 +486,14 @@ export function HomeScreen({
       </div>
 
       <div className="mb-10">
-        <NewProjectForm key={formKey} onSubmit={onSubmit} submitting={submitting} initial={formSeed} />
+        <NewProjectForm
+          key={formKey}
+          onSubmit={onSubmit}
+          submitting={submitting}
+          initial={formSeed}
+          categories={categories}
+          subcategoriesByCategory={subcategoriesByCategory}
+        />
       </div>
 
       {projects === null ? (
