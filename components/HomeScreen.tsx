@@ -560,38 +560,32 @@ function clusterBySubcategory(items: ProjectContext[]): {
 }
 
 /**
- * The home screen: a PORTFOLIO DASHBOARD, not a single idea box (see the
- * "land on multiple features" request, 2026-09-29). Fetches every project
- * (GET /api/projects, which auto-seeds a fake-banking-app example
- * portfolio on first run — see lib/seed.ts), groups them by category the
- * way the reference banking nav does (Accounts, Payments & Transfers,
- * Cards & Loans) plus the universal Core Flows (Login, Onboarding), and
- * shows each project's real pipeline progress as a status badge + a
- * 4-stage dot strip (Ideate/Research/Define/Design).
+ * The home screen, simplified for now (explicit request, 2026-09-30): just
+ * the new-feature prompt and the pipeline that follows submitting it — no
+ * portfolio grid of existing features grouped by category.
+ *
+ * The portfolio-dashboard pieces built earlier (groupByCategory,
+ * clusterBySubcategory, ProjectCard, FeatureClusterCard, DependencyChips)
+ * are left intact above, unused, rather than deleted — this is a "for now"
+ * simplification, not a decision to remove the concept; see docs/AGENTS.md.
+ * We still fetch the project list in the background, because the
+ * category/feature dropdowns and the "Depends on" picker in the form
+ * below are genuinely useful even with the grid hidden.
  */
 export function HomeScreen({
   onSubmit,
   submitting,
-  onOpenProject,
   refreshKey,
 }: {
   onSubmit: SubmitFn;
   submitting: boolean;
+  // Kept in the prop signature (app/page.tsx still passes it) even though
+  // this simplified view doesn't render any cards to open — see the doc
+  // comment above.
   onOpenProject: (project: ProjectContext) => void;
   refreshKey: number;
 }) {
   const [projects, setProjects] = useState<ProjectContext[] | null>(null);
-  // The "+ New Feature" box is always visible on the dashboard (not
-  // toggled) — set (and bumped via formKey) when a cluster's "+ Add PRD"
-  // button is clicked, so the form resets pre-filled with that feature's
-  // category/subcategory instead of blank.
-  const [formSeed, setFormSeed] = useState<{ category?: string; subcategory?: string }>({});
-  const [formKey, setFormKey] = useState(0);
-
-  function openFormFor(seed: { category?: string; subcategory?: string }) {
-    setFormSeed(seed);
-    setFormKey((k) => k + 1);
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -604,8 +598,6 @@ export function HomeScreen({
       cancelled = true;
     };
   }, [refreshKey]);
-
-  const groups = projects ? groupByCategory(projects) : [];
 
   // Existing category/feature names, for the form's dropdowns — see
   // ComboField. Recomputed whenever the project list changes.
@@ -630,73 +622,22 @@ export function HomeScreen({
     return map;
   }, [projects]);
 
-  // Looks up any project by id, for resolving `dependsOn` into a name +
-  // real status — see DependencyChips.
-  const allProjectsById = useMemo(() => {
-    const map = new Map<string, ProjectContext>();
-    (projects ?? []).forEach((p) => map.set(p.id, p));
-    return map;
-  }, [projects]);
-
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
+    <main className="mx-auto max-w-2xl px-6 py-16">
       <div className="mb-8">
-        <p className="max-w-lg text-sm text-white/50">
-          Example portfolio — a fake credit-union banking app, seeded for this demo. Every card below is its own
-          ProductOS pipeline; each is further along than the last. Click one to open it, or start a new one below.
+        <p className="text-sm text-white/50">
+          Describe a product idea or feature. Research, PRD, and Design run for real (mock or live) from here;
+          Code appears stubbed.
         </p>
       </div>
 
-      <div className="mb-10">
-        <NewProjectForm
-          key={formKey}
-          onSubmit={onSubmit}
-          submitting={submitting}
-          initial={formSeed}
-          categories={categories}
-          subcategoriesByCategory={subcategoriesByCategory}
-          allProjects={projects ?? []}
-        />
-      </div>
-
-      {projects === null ? (
-        <p className="text-sm text-white/30">Loading portfolio…</p>
-      ) : projects.length === 0 ? (
-        <p className="text-sm text-white/30">No features yet — start one above.</p>
-      ) : (
-        <div className="space-y-10">
-          {groups.map(([category, items]) => {
-            const { standalone, clusters } = clusterBySubcategory(items);
-            return (
-              <div key={category || "__uncategorized__"}>
-                {category && (
-                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{category}</h2>
-                )}
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {clusters.map(([sub, subItems]) => (
-                    <FeatureClusterCard
-                      key={sub}
-                      name={sub}
-                      items={subItems}
-                      onOpen={onOpenProject}
-                      onAddPrd={() => openFormFor({ category, subcategory: sub })}
-                      allProjectsById={allProjectsById}
-                    />
-                  ))}
-                  {standalone.map((p) => (
-                    <ProjectCard
-                      key={p.id}
-                      project={p}
-                      onOpen={() => onOpenProject(p)}
-                      allProjectsById={allProjectsById}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <NewProjectForm
+        onSubmit={onSubmit}
+        submitting={submitting}
+        categories={categories}
+        subcategoriesByCategory={subcategoriesByCategory}
+        allProjects={projects ?? []}
+      />
     </main>
   );
 }
