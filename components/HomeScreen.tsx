@@ -147,8 +147,7 @@ function DependsOnField({
             >
               <span className="truncate">{p.idea}</span>
               <span className="shrink-0 text-white/30">
-                {p.category ?? "Other"}
-                {p.subcategory ? ` · ${p.subcategory}` : ""}
+                {[p.category, p.subcategory].filter(Boolean).join(" · ")}
               </span>
             </button>
           ))}
@@ -530,10 +529,11 @@ function FeatureClusterCard({
   );
 }
 
+/** Uncategorized projects use an empty-string key and render without a section heading (no "Other" label). */
 function groupByCategory(projects: ProjectContext[]): [string, ProjectContext[]][] {
   const groups = new Map<string, ProjectContext[]>();
   for (const p of projects) {
-    const cat = p.category?.trim() || "Other";
+    const cat = p.category?.trim() ?? "";
     if (!groups.has(cat)) groups.set(cat, []);
     groups.get(cat)!.push(p);
   }
@@ -641,8 +641,7 @@ export function HomeScreen({
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Good evening.</h1>
-        <p className="mt-1 max-w-lg text-sm text-white/50">
+        <p className="max-w-lg text-sm text-white/50">
           Example portfolio — a fake credit-union banking app, seeded for this demo. Every card below is its own
           ProductOS pipeline; each is further along than the last. Click one to open it, or start a new one below.
         </p>
@@ -669,8 +668,10 @@ export function HomeScreen({
           {groups.map(([category, items]) => {
             const { standalone, clusters } = clusterBySubcategory(items);
             return (
-              <div key={category}>
-                <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{category}</h2>
+              <div key={category || "__uncategorized__"}>
+                {category && (
+                  <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-white/40">{category}</h2>
+                )}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {clusters.map(([sub, subItems]) => (
                     <FeatureClusterCard
