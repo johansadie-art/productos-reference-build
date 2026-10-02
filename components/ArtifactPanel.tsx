@@ -344,7 +344,7 @@ function ArchitectureView({
 }
 
 /**
- * Define/PRD writes straight into the "ProductOS Standard" outline (no
+ * Define/PRD writes straight into the "MelodyOS Standard" outline (no
  * approval gate in this reference build — see docs/AGENTS.md), then shows
  * an outline sidebar + section viewer once sections are written, mirroring
  * the reference screenshot's "PRD Outline" panel + section view.

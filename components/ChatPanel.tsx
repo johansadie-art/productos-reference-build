@@ -78,7 +78,7 @@ export function ChatPanel({
       <div className="border-b border-border px-4 py-3">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-white/40">{ui.label}</p>
         <div className="flex gap-2">
-          <span className="rounded-full border border-border px-2.5 py-1 text-xs text-white/40">ProductOS Agent</span>
+          <span className="rounded-full border border-border px-2.5 py-1 text-xs text-white/40">MelodyOS Agent</span>
           <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${ui.color}`}>{ui.agentName}</span>
         </div>
       </div>
@@ -246,7 +246,7 @@ export function ChatPanel({
                 : answering
                   ? "Waiting on the agent…"
                   : isFirstStage
-                    ? "Tell ProductOS what you want to build…"
+                    ? "Tell MelodyOS what you want to build…"
                     : `Ask ${ui.agentName} for help…`
             }
             title={canAnswer ? undefined : "Conversational input outside Ideation is a Next-phase feature — see docs/ROADMAP.md"}

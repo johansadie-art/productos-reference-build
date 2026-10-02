@@ -1,4 +1,4 @@
-# ProductOS (Reference Build) — Roadmap
+# MelodyOS by Symphony (Reference Build) — Roadmap
 
 **Planning horizon**: Now = this session's build. Next/Later = future work, not started.
 **Primary outcomes**:

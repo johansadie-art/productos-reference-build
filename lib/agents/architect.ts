@@ -159,7 +159,7 @@ export async function writeArchitectureSections(
 
   const raw = await generateText({
     system:
-      "You are the Architect Agent in a product-development pipeline called ProductOS — the optional technical " +
+      "You are the Architect Agent in a product-development pipeline called MelodyOS — the optional technical " +
       "deep-dive inside Define. From the locked PRD and tech-stack facts, write 8 architecture sections. You " +
       "design the system; you do not write application code. Ground every claim in the PRD and tech-stack facts " +
       "given — do not invent new technology choices. Write clean markdown per section: an H1 matching the " +
@@ -256,7 +256,7 @@ export async function recordArchitectureDecisions(
 
   const raw = await generateText({
     system:
-      "You are the Architect Agent in a product-development pipeline called ProductOS, recording architecture " +
+      "You are the Architect Agent in a product-development pipeline called MelodyOS, recording architecture " +
       "decisions and an infrastructure cost estimate from the locked tech-stack facts. Output exactly 3 ADR " +
       `blocks, each starting with a line "${ADR_DELIM}<Decision Title>%%%" followed by 3 lines "Context: …", ` +
       `"Decision: …", "Consequences: …" — then one COST block starting with "${BLOCK_DELIM}COST${BLOCK_DELIM}" ` +

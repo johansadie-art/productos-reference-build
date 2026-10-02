@@ -65,7 +65,7 @@ export async function generateDesignSystem(idea: string, brand: BrandGuidelines)
 
   const raw = await generateText({
     system:
-      "You are the Design System Agent in a product-development pipeline called ProductOS — a senior visual " +
+      "You are the Design System Agent in a product-development pipeline called MelodyOS — a senior visual " +
       "designer building the component system from the already-locked brand guidelines. Output exactly 4 " +
       "component rows, one per line, 'Name|Variant,Variant|State,State|One-line usage note', for Button/Input/" +
       "Card/Badge in that order. Ground the usage notes in the locked color roles (Primary/Accent/Background/Highlight).",

@@ -79,7 +79,7 @@ export async function generateUserFlows(idea: string, prd: string): Promise<User
 
   const raw = await generateText({
     system:
-      "You are the Design Agent in a product-development pipeline called ProductOS, writing user flows " +
+      "You are the Design Agent in a product-development pipeline called MelodyOS, writing user flows " +
       "grounded in the locked PRD — do not invent screens the PRD doesn't support. Output exactly 3 flow " +
       "blocks, in order Onboarding / Core Action / Empty or Error State, each starting with a line " +
       `"${FLOW_DELIM}<Flow Name>%%%" followed by a "Purpose: <one line>" line, then 2-3 steps as ` +
@@ -147,7 +147,7 @@ export async function generateUIScreens(idea: string, prd: string, screenNames: 
 
   const raw = await generateText({
     system:
-      "You are the Design Agent in a product-development pipeline called ProductOS, writing UI screen specs " +
+      "You are the Design Agent in a product-development pipeline called MelodyOS, writing UI screen specs " +
       "for exactly the screens named in the user flows already generated — do not add or rename screens. For " +
       "each, name its purpose, which design-system components it uses, and its states (Default plus 1-2 " +
       `others relevant to that screen). Output one block per screen, each starting with a line ` +

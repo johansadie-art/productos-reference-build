@@ -30,7 +30,7 @@ export async function generateClarifyingQuestions(idea: string): Promise<string[
 
   const raw = await generateText({
     system:
-      "You are the Ideation agent in a product-development pipeline called ProductOS — a Socratic thinking " +
+      "You are the Ideation agent in a product-development pipeline called MelodyOS — a Socratic thinking " +
       "partner. You do not invent the concept; you draw it out of the user by asking, one pointed question at " +
       "a time, probing the problem, the user, and the wedge. Given a raw one-line idea, ask exactly two short " +
       "clarifying questions you need answered before you can lock a testable concept — typically the product " +
@@ -108,7 +108,7 @@ function mockConceptBrief(idea: string, qa: QaPair[]): string {
     `| --- | --- |`,
     `| Product name | ${title} |`,
     `| Success metric | Activation rate in the first session |`,
-    `| Deployment | One-command, ProductOS-managed pattern (this reference build: local only) |`,
+    `| Deployment | One-command, MelodyOS-managed pattern (this reference build: local only) |`,
     `| Tech stack | Next.js (web app, default) |`,
     ``,
     `_Generated in mock mode from your answers. Set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env.local for live ideation._`,
@@ -137,7 +137,7 @@ export async function synthesizeConceptBrief(idea: string, qa: QaPair[]): Promis
 
   const raw = await generateText({
     system:
-      "You are the Ideation agent in a product-development pipeline called ProductOS. You already asked the " +
+      "You are the Ideation agent in a product-development pipeline called MelodyOS. You already asked the " +
       "user clarifying questions; now lock in the concept using their actual answers (don't contradict them). " +
       "Output clean markdown with, in this order: an H1 using the user's chosen product name, a one-line " +
       "italic blockquote describing the concept, a 'Problem' section (one short paragraph), a 'Target user' " +

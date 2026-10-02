@@ -1,4 +1,4 @@
-# ProductOS — Reference Build
+# MelodyOS by Symphony — Reference Build
 
 A working prototype of the core mechanic behind [productos.dev](https://productos.dev/): a shared-context,
 multi-agent pipeline that takes a product idea from Research → PRD → Design → Code → Deploy.

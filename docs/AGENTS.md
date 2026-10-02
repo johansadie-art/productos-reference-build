@@ -1,4 +1,4 @@
-# ProductOS — Real Agent Roster (reference material)
+# MelodyOS by Symphony — Real Agent Roster (reference material)
 
 Captured from the source product's actual per-agent descriptions/system-prompt excerpts and tool lists
 (provided by the user, 2026-09-29). This is the canonical spec to build against as this reference build
@@ -8,7 +8,7 @@ grows past the Now-phase scope in `docs/ROADMAP.md`. **Build status** reflects t
 |---|---|---|---|---|---|
 | 1 | **Ideation** | QUESTIONER — draws the concept out of the user, doesn't invent it | Raw idea, prior concept brief, project wiki | Concept brief (problem, target user, assumptions) + open-questions log for Research | **Real** — conversational, mock+live (see below) |
 | 2 | **Research** | INVESTIGATOR — grounds every claim in a clickable source | Ideation brief, a research task, workspace customer signals | Sourced findings, competitor registry, per-topic docs, rolling brief, survey links | **Partial** — 4 parallel per-topic docs (`write_research_run` shape) + self-directed reasoning trace, mock+live; no real multi-source fan-out (Exa/Reddit/app-store search), no surveys |
-| 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | 8-section PRD (Summary, Background, Objective & Key Results, Market Segments, Value Propositions, Solution, Release Plan, Assumptions), 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — scope-cutting reasoning + section-by-section writing against the ProductOS Standard outline (mock+live); no outline-approval gate (only one template exists in this build, so nothing to choose between — see below), no PRFAQ/Lean/Enterprise templates, no revision-mode targeted edits |
+| 3 | **PRD** | Writes PRD sections behind an outline-approval gate, grounded in prior artifacts | Ideation brief, research synthesis, an approved section spec | 8-section PRD (Summary, Background, Objective & Key Results, Market Segments, Value Propositions, Solution, Release Plan, Assumptions), 4 templates (Standard/PRFAQ/Lean/Enterprise) | **Partial** — scope-cutting reasoning + section-by-section writing against the MelodyOS Standard outline (mock+live); no outline-approval gate (only one template exists in this build, so nothing to choose between — see below), no PRFAQ/Lean/Enterprise templates, no revision-mode targeted edits |
 | 4 | **Architect** | Optional technical deep-dive in Define: system/DB/API/deploy/security architecture, ADRs, cost estimates | PRD sections, locked constraints, tech-stack facts | 8 architecture sections, ADRs, infra cost estimates | **Partial** — all 8 sections + 3 ADRs + an infra cost estimate, mock+live, triggered on demand from the Architecture tab (not auto-run — see below); reads locked constraints, also newly real in this build |
 | 5 | **Design** | Turns concept+research+PRD into user flows and UI screen specs | Concept, research, PRD, locked brand direction | User-flow diagrams, UI screen specs, design docs/reports | **Partial** — Brand Guidelines (personality + 4-color palette + typography + voice) + self-directed reasoning trace + 3 User Flows + UI Screen specs for every screen named across them, all mock+live |
 | 6 | **Design System** | Senior visual designer; builds tokens, component system, DESIGN.md; renders HTML previews | Locked brand guidelines/assets, mood board, PRD personality notes | DESIGN.md, dark/light preview pages, token source for build agents | **Partial** — tokens (colors extend the locked palette + fixed spacing/radius scales) + a 4-component system + DESIGN.md, mock+live; dark/light preview is a small live-rendered card in this app's own UI, not a sandboxed build; no mood board |
@@ -47,7 +47,7 @@ illustrative/mock or single-pass live-LLM reasoning, not real multi-source searc
 and there's no survey generation.
 
 PRD/Define cuts scope with a two-question self-directed reasoning trace (what ships in v1 / what waits for
-later, mirroring Research's pattern), then writes straight into the real 8-section "ProductOS Standard"
+later, mirroring Research's pattern), then writes straight into the real 8-section "MelodyOS Standard"
 outline — Summary, Background, Objective & Key Results (SMART), Market Segments, Value Propositions,
 Solution, Release Plan, Assumptions — pulling Assumptions straight from Ideate's assumptions log and flagging
 each one `- [ ] **Needs validation:**` rather than stating it as fact. See `lib/agents/prd.ts`. There is

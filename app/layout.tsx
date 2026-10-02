@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ProductOS (Reference Build)",
+  title: "MelodyOS by Symphony (Reference Build)",
   description: "Idea in. Product out. — reference prototype of the shared-context, multi-agent pipeline.",
 };
 

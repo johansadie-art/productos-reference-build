@@ -129,7 +129,7 @@ export async function generateBrandGuidelines(idea: string, prd: string): Promis
 
   const raw = await generateText({
     system:
-      "You are the Design agent in a product-development pipeline called ProductOS, building the brand system " +
+      "You are the Design agent in a product-development pipeline called MelodyOS, building the brand system " +
       "first — palette, typography, then voice — benchmarked against Linear, Stripe, and Vercel's restraint. " +
       "Ground the personality in the PRD already in shared context; don't invent facts. Output exactly 4 " +
       `blocks in this order, each on its own line as "${BLOCK_DELIM}<NAME>${BLOCK_DELIM}": ` +

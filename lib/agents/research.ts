@@ -45,7 +45,7 @@ export async function runResearchReasoning(idea: string, ideateBrief?: string): 
 
   const raw = await generateText({
     system:
-      "You are the Research agent in a product-development pipeline called ProductOS. Before writing anything, " +
+      "You are the Research agent in a product-development pipeline called MelodyOS. Before writing anything, " +
       "you validate the concept against the market: ask yourself exactly two investigative questions and answer " +
       "each in one short sentence from your own findings (not the user's words). Typically: the riskiest " +
       "assumption to test first, and where the competitive gap is. Output exactly this format, two lines: " +
@@ -175,7 +175,7 @@ export async function runResearchTopics(idea: string, ideateBrief?: string): Pro
 
   const raw = await generateText({
     system:
-      "You are the Research agent in a product-development pipeline called ProductOS, running four research " +
+      "You are the Research agent in a product-development pipeline called MelodyOS, running four research " +
       "jobs in parallel: size the market (TAM/SAM/SOM with reasoning shown), map the competitors (positioning, " +
       "pricing, gaps), model the users (grounded findings, not invented archetypes), and sharpen the positioning " +
       "(a wedge and one-line statement). Ground every claim in a source, clearly marked illustrative if no live " +

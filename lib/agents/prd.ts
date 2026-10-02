@@ -5,10 +5,10 @@ import { PRDSection, ReasoningPair } from "../types";
 // outline-approval gate, grounded in the Ideation brief + Research brief
 // already in shared context — it does not re-ask the user anything
 // established upstream. This reference build supports one template
-// ("ProductOS Standard"); PRFAQ/Lean/Enterprise are Next-phase — see
+// ("MelodyOS Standard"); PRFAQ/Lean/Enterprise are Next-phase — see
 // docs/ROADMAP.md.
 //
-// The 8-section outline below is the real ProductOS Standard structure
+// The 8-section outline below is the real MelodyOS Standard structure
 // (per user-supplied reference copy, 2026-09-29): "Summary, Background,
 // Objective with SMART key results, Market Segments, Value Propositions,
 // Solution, and Release plan" + "Assumptions flagged for team validation" —
@@ -85,7 +85,7 @@ export async function runPRDReasoning(idea: string, ideateBrief: string): Promis
 
   const raw = await generateText({
     system:
-      "You are the PRD agent in a product-development pipeline called ProductOS. Before writing the document, " +
+      "You are the PRD agent in a product-development pipeline called MelodyOS. Before writing the document, " +
       "you cut scope: ask yourself exactly two questions and answer each in one short phrase grounded in the " +
       "ideation brief — what ships in v1, and what explicitly waits for later. Output exactly this format, two " +
       "lines: 'Q: <question>\\nA: <answer>' repeated twice, nothing else.",
@@ -103,12 +103,12 @@ export async function runPRDReasoning(idea: string, ideateBrief: string): Promis
   return pairs.length ? pairs.slice(0, 2) : mock;
 }
 
-/** Scaffolds the document outline against the ProductOS Standard template and gets it approved before writing. */
+/** Scaffolds the document outline against the MelodyOS Standard template and gets it approved before writing. */
 export async function proposePRDOutline(idea: string, research: string): Promise<string[]> {
   const raw = await generateText({
     system:
-      "You are the PRD agent in a product-development pipeline called ProductOS. Before writing anything, you " +
-      "scaffold a document outline using the 'ProductOS Standard' template — a leadership-and-engineering-ready " +
+      "You are the PRD agent in a product-development pipeline called MelodyOS. Before writing anything, you " +
+      "scaffold a document outline using the 'MelodyOS Standard' template — a leadership-and-engineering-ready " +
       "PRD, not a user-story spec — and get it approved. Output exactly these 8 section titles verbatim, one per " +
       `line, no numbering, no extra text: ${PRD_STANDARD_OUTLINE.join(", ")}.`,
     prompt: `Product idea: "${idea}"\n\nResearch brief (for context):\n${research || "(none)"}\n\nPropose the outline now.`,
@@ -255,7 +255,7 @@ export async function writePRDSections(
 
   const raw = await generateText({
     system:
-      "You are the PRD agent in a product-development pipeline called ProductOS, writing an approved outline " +
+      "You are the PRD agent in a product-development pipeline called MelodyOS, writing an approved outline " +
       "section by section, structured the way engineering and leadership expect (not a generic user-story spec). " +
       "Ground every claim in the ideation brief and research brief already in shared context — do not invent " +
       "facts the user hasn't established. Write clean markdown per section: an H1 matching the section title, " +

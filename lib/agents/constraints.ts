@@ -65,7 +65,7 @@ export async function generateConstraints(idea: string, ideateBrief: string, pro
 
   const raw = await generateText({
     system:
-      "You are locking a project's technical constraints for a product-development pipeline called ProductOS, " +
+      "You are locking a project's technical constraints for a product-development pipeline called MelodyOS, " +
       "read later by the PRD and Architect agents via their shared load_constraints tool. Ground choices in the " +
       "idea and project type; keep every choice small-team/v1-appropriate, not enterprise-scale. Output exactly " +
       `2 blocks, each on its own line as "${BLOCK_DELIM}<NAME>${BLOCK_DELIM}": TECHSTACK (exactly 5 lines, in ` +

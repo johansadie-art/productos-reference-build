@@ -242,7 +242,7 @@ async function runRestOfPipeline(project: ProjectContext, ideateBrief: string) {
 
   // --- PRD (Define) ---
   // Per docs/AGENTS.md: the PRD agent cuts scope with a self-directed
-  // reasoning trace, then writes straight into the "ProductOS Standard"
+  // reasoning trace, then writes straight into the "MelodyOS Standard"
   // outline — no outline-approval gate in this reference build (only one
   // template exists, so there's nothing to approve between; see
   // docs/ROADMAP.md for a real approval/revision gate across templates).

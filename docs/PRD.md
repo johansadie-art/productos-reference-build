@@ -1,7 +1,7 @@
-# ProductOS (Reference Build) — Extended PRD
+# MelodyOS by Symphony (Reference Build) — Extended PRD
 
 ## 0. Executive Summary
-ProductOS is an "AI-native product development platform": one prompt goes in, and a pipeline of specialized AI agents (sharing one context layer) produces market research, a real PRD, UX designs, production web + mobile code, and a deploy, without the user re-explaining themselves at each handoff. This doc specs a **reference build**: a working prototype that demonstrates the core mechanic (shared context + multi-agent pipeline) end-to-end, so the team can evaluate the concept before committing to the full commercial platform (mobile codegen, GitHub sync, billing, 58-tool MCP server, etc.).
+MelodyOS is an "AI-native product development platform": one prompt goes in, and a pipeline of specialized AI agents (sharing one context layer) produces market research, a real PRD, UX designs, production web + mobile code, and a deploy, without the user re-explaining themselves at each handoff. This doc specs a **reference build**: a working prototype that demonstrates the core mechanic (shared context + multi-agent pipeline) end-to-end, so the team can evaluate the concept before committing to the full commercial platform (mobile codegen, GitHub sync, billing, 58-tool MCP server, etc.).
 
 **This build is a reference/prototype, not the commercial product.** It is optimized to prove the orchestration model and UX, not to be production-hardened or monetizable on day one.
 
@@ -99,7 +99,7 @@ ProductOS is an "AI-native product development platform": one prompt goes in, an
   - A4: Next.js + TypeScript + Tailwind is an acceptable default stack (matches the source product's own stated stack and is easy for the user's team to extend).
 - **Open questions**:
   - Which LLM provider/key should Now-phase generation use, if any (OK to stay mock-only for now)?
-  - Should the Now-phase UI adopt ProductOS's visual language/copy, or be neutrally branded since this is an internal reference build?
+  - Should the Now-phase UI adopt MelodyOS's visual language/copy, or be neutrally branded since this is an internal reference build?
   - Who reviews this prototype, and what's the decision this is meant to inform (build the real thing? pivot? shelve?).
 
 ## 9. Dependencies & Rollout
