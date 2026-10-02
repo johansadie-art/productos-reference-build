@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import { ProjectContext, ProjectType, StageName, ChatMessage, ChatKind } from "./types";
 import { saveProject, loadProject } from "./store";
 import { getMode } from "./llm";
@@ -109,7 +108,11 @@ export function startPipeline(
   subcategory?: string,
   dependsOn?: string[]
 ): ProjectContext {
-  const id = randomUUID();
+  // Web Crypto's randomUUID (global in both Node 19+ and all modern
+  // browsers) instead of Node's `crypto` module import — this file is also
+  // bundled client-side for the static demo (components/StaticDemoApp.tsx),
+  // and a Node-core import there would be a (needless) bundling risk.
+  const id = crypto.randomUUID();
   const project = emptyProject(id, idea, projectType, startStage, category, subcategory);
   if (dependsOn?.length) project.dependsOn = dependsOn;
   project.stages.Ideate.status = "waiting";

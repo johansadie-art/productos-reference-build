@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:demo": "./scripts/build-static-demo.sh",
     "start": "next start",
     "lint": "next lint"
   },

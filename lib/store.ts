@@ -1,39 +1,21 @@
-import fs from "fs";
-import path from "path";
 import { ProjectContext } from "./types";
+import { getStore } from "./storeProvider";
 
-// File-backed store so state survives Next.js dev-server hot reloads / module
-// re-instantiation. This is a reference build (single-user, local) — see
-// docs/PRD.md A2: Postgres/Supabase is a Next-phase upgrade, not needed now.
-const DATA_DIR = path.join(process.cwd(), ".data", "projects");
+// Thin wrapper preserving the original function-call API so every existing
+// call site (lib/orchestrator.ts, the API routes, lib/seed.ts) keeps working
+// completely unchanged. The actual backend is pluggable — see
+// lib/storeProvider.ts (defaults to lib/fsStore.ts; the static demo swaps in
+// lib/localStore.ts instead). Crucially, THIS file has no top-level `fs`
+// import anymore, so it's safe to pull into a browser bundle.
 
-function ensureDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-}
-
-function filePath(id: string) {
-  return path.join(DATA_DIR, `${id}.json`);
-}
-
-export function saveProject(project: ProjectContext) {
-  ensureDir();
-  fs.writeFileSync(filePath(project.id), JSON.stringify(project, null, 2), "utf-8");
+export function saveProject(project: ProjectContext): void {
+  getStore().saveProject(project);
 }
 
 export function loadProject(id: string): ProjectContext | null {
-  ensureDir();
-  const p = filePath(id);
-  if (!fs.existsSync(p)) return null;
-  return JSON.parse(fs.readFileSync(p, "utf-8")) as ProjectContext;
+  return getStore().loadProject(id);
 }
 
 export function listProjects(): ProjectContext[] {
-  ensureDir();
-  return fs
-    .readdirSync(DATA_DIR)
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => JSON.parse(fs.readFileSync(path.join(DATA_DIR, f), "utf-8")) as ProjectContext)
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return getStore().listProjects();
 }

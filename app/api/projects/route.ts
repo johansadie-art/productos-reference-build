@@ -1,3 +1,4 @@
+import "@/lib/serverStoreBootstrap";
 import { NextRequest, NextResponse } from "next/server";
 import { startPipeline } from "@/lib/orchestrator";
 import { listProjects } from "@/lib/store";

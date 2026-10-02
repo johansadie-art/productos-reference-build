@@ -576,6 +576,7 @@ export function HomeScreen({
   onSubmit,
   submitting,
   refreshKey,
+  fetchProjects,
 }: {
   onSubmit: SubmitFn;
   submitting: boolean;
@@ -584,20 +585,25 @@ export function HomeScreen({
   // comment above.
   onOpenProject: (project: ProjectContext) => void;
   refreshKey: number;
+  // How to get the project list that feeds the Category/Feature dropdowns
+  // and the "Depends on" picker. Defaults to the full local app's real
+  // GET /api/projects. The static demo (components/StaticDemoApp.tsx) has
+  // no server, so it passes its own localStorage-backed reader instead —
+  // see docs/AGENTS.md.
+  fetchProjects?: () => Promise<ProjectContext[]>;
 }) {
   const [projects, setProjects] = useState<ProjectContext[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/projects")
-      .then((r) => r.json())
-      .then((data: ProjectContext[]) => {
-        if (!cancelled) setProjects(data);
-      });
+    const fetcher = fetchProjects ?? (() => fetch("/api/projects").then((r) => r.json()));
+    fetcher().then((data) => {
+      if (!cancelled) setProjects(data);
+    });
     return () => {
       cancelled = true;
     };
-  }, [refreshKey]);
+  }, [refreshKey, fetchProjects]);
 
   // Existing category/feature names, for the form's dropdowns — see
   // ComboField. Recomputed whenever the project list changes.

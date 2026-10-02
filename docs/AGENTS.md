@@ -123,3 +123,21 @@ amber "🔗 Blocked by X" if not, emerald "🔗 Depends on X" if it already is. 
 `components/HomeScreen.tsx`, the "Depends on" picker in the new-feature form, and the concrete example in
 `lib/seed.ts` — "Instant Personal Loan Approval" depends on both Multi-Factor Authentication (not done yet →
 renders as blocking) and Password Login (already done → renders as clear).
+
+Static demo (2026-10-02): "is there a way to make this website work on GitHub Pages?" GitHub Pages only
+serves static files — no server, so the real app's `app/api/*` routes and `lib/fsStore.ts`'s filesystem
+persistence can't run there. Rather than faking it, this adds a genuinely separate, browser-only build of the
+SAME pipeline logic. `lib/storeProvider.ts` makes the persistence backend pluggable (a `Store` interface with
+`setStore`/`getStore`) so `lib/orchestrator.ts` and `lib/seed.ts` don't know or care which backend is active:
+`lib/fsStore.ts` (the original filesystem logic, now behind the interface) for the real app, wired up by
+`lib/serverStoreBootstrap.ts` — imported only by the server-only `app/api/*` route files, never by anything
+that could end up in a client bundle — or `lib/localStore.ts` (browser `localStorage`) for the demo, wired up
+directly in `components/StaticDemoApp.tsx`. `app/page.tsx` branches between `components/LocalApp.tsx` (the
+original app, moved verbatim, fetch()-ing the API routes) and `components/StaticDemoApp.tsx` (same UI, calls
+`lib/orchestrator.ts` directly instead of fetching anything) based on the build-time
+`NEXT_PUBLIC_STATIC_DEMO` env var, so one `next build` only ever ships one of the two branches. Building the
+static export also has to physically move `app/api` out of the tree first (Next can't statically export a
+Route Handler that reads the request body) — see `scripts/build-static-demo.sh`, run via `npm run build:demo`,
+and `.github/workflows/deploy-demo.yml` for the auto-deploy-on-push-to-main. The demo always runs in mock mode
+(no server exists to hold an API key safely — see `lib/llm.ts`) and its data is per-browser/local-only, same
+single-user caveat as the real app's `.data/` files, just backed by `localStorage` instead.
