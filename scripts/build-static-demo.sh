@@ -31,6 +31,13 @@ if [ -d "$API_DIR" ]; then
   mv "$API_DIR" "$BACKUP_DIR"
 fi
 
+# A stale .next/ from a previous `next dev`/`next build` can contain
+# generated type-checker files (.next/dev/types/validator.ts) that still
+# reference app/api/* route modules — which we just moved out of the tree
+# above — and fail the typecheck with "Cannot find module". Always start
+# this build from a clean .next/.
+rm -rf .next
+
 # NEXT_PUBLIC_BASE_PATH: pass this in for a GitHub Pages *project* site
 # (served at <user>.github.io/<repo>/, not the domain root), e.g.:
 #   NEXT_PUBLIC_BASE_PATH=/productos-reference-build ./scripts/build-static-demo.sh
